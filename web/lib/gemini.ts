@@ -2,6 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import { publish } from './bus';
 import { getAnomalies, getBaseline, getClinicScores, getDaily, getHourly, getStairNearTrips, reportColumns } from './data';
 import { patientId, query } from './db';
+import physionet from '../data/physionet-strides.json';
+import { alsStrideCv, controlStrideCv } from './synthetic';
 import type { Audience, Report } from './types';
 
 const systemInstruction = `You summarize prototype adaptive ankle-foot orthosis data for Alex Chen.
@@ -31,7 +33,8 @@ Be calm and practical. Do not imply a safe period or an improvement without supp
 ## Questions for the next visit
 Compare foot drop severity indicators, assist trend, and clinic scores with the first 14 days of data.
 Discuss ankle dorsiflexor work, stair strategy, fatigue pacing, and AFO assist tuning only as suggestions for the treating physiotherapist to review.
-Describe afternoon and evening patterns and distinguish sensor changes from disease progression.`,
+Describe afternoon and evening patterns and distinguish sensor changes from disease progression.
+Compare Alex's stride time variability with the healthy control and ALS cohort reference values from PhysioNet, citing the source once.`,
 };
 
 export async function generateReport(audience: Audience, from: string, to: string): Promise<Report> {
@@ -39,12 +42,15 @@ export async function generateReport(audience: Audience, from: string, to: strin
   const [dailyMetrics, hourlyCells, anomalyHours, stairNearTrips, clinicScores, baseline] = await Promise.all([
     getDaily(from, to), getHourly(from, to), getAnomalies(from, to), getStairNearTrips(from, to), getClinicScores(), getBaseline(),
   ]);
+  const [{ strideCv }] = await query<{ strideCv: number }>(
+    `SELECT stddev_pop(stride_ms) / avg(stride_ms) AS "strideCv" FROM steps WHERE patient_id=$1 AND time >= $2 AND time < $3`, [patientId, from, to]);
+  const strideVariability = { alexStrideCv: strideCv, healthyControlsStrideCv: controlStrideCv, alsCohortStrideCv: alsStrideCv, reference: physionet.source };
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, apiVersion: 'v1beta' });
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     config: { systemInstruction, temperature: 0.3, thinkingConfig: { thinkingBudget: 1024 } },
     contents: `${reportPrompts[audience]}\n${JSON.stringify({ from, to, timezone: 'UTC', dailyMetrics, hourlyCells, anomalyHours, stairNearTrips,
-      clinicScores: clinicScores.filter(score => score.date <= to.slice(0, 10)), baseline })}`,
+      clinicScores: clinicScores.filter(score => score.date <= to.slice(0, 10)), baseline, strideVariability })}`,
   });
   const markdown = response.text?.trim().replace(/\u2014/g, ',');
   if (!markdown) throw new Error('Gemini returned an empty report');
