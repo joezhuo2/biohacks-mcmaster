@@ -6,6 +6,7 @@ import type { CareEvent } from "@/lib/types";
 import { Button } from "../Button";
 import { fmtTime } from "../format";
 import { spring } from "../motion";
+import { Portal } from "../Portal";
 
 const variants = {
   hidden: { y: "-120%", opacity: 0 },
@@ -16,6 +17,7 @@ export function NearTripSheet({ alert, onDismiss }: { alert: CareEvent | null; o
   const chime = useChime();
 
   return (
+    <Portal>
     <AnimatePresence>
       {alert && (
         <motion.div
@@ -51,5 +53,6 @@ export function NearTripSheet({ alert, onDismiss }: { alert: CareEvent | null; o
         </motion.div>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }
