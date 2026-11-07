@@ -1,12 +1,10 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
-import { Line, LineChart, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
-import { useLive } from "@/hooks/useLive";
+import { useEffect, useRef, type ReactNode } from "react";
+import { useLive, useLiveStore } from "@/hooks/useLive";
 import { useNow } from "@/hooks/useNow";
 import { AnimatedNumber } from "../AnimatedNumber";
 import { Card, Empty } from "../Card";
-import { axis } from "../charts";
 import { ago, cm, terrainLabel } from "../format";
 
 const TARGET_CM = 2;
@@ -21,37 +19,124 @@ function Stat({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Trace() {
-  const samples = useLive((s) => s.samples);
-  const data = useMemo(() => samples.map((s) => ({ t: Date.parse(s.time), deg: s.ankleDeg })), [samples]);
-  if (!data.length) return <Empty className="h-44">Waiting for live data from the brace.</Empty>;
-  const end = data[data.length - 1].t;
+const WINDOW_MS = 10_000;
+const PLAYBACK_DELAY_MS = 300;
+const Y_MIN = -25;
+const Y_MAX = 20;
+const Y_TICKS = [-20, -10, 0, 10, 20];
+const GUTTER = 30;
 
+function Trace() {
+  const store = useLiveStore();
+  const hasData = useLive((s) => s.samples.length > 0);
+  const canvas = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el) return;
+    const ctx = el.getContext("2d")!;
+    let colors = { accent: "", line: "", muted: "", font: "" };
+    const readColors = () => {
+      const css = getComputedStyle(el);
+      colors = {
+        accent: css.getPropertyValue("--accent"),
+        line: css.getPropertyValue("--line"),
+        muted: css.getPropertyValue("--muted"),
+        font: `11px ${css.fontFamily}`,
+      };
+    };
+    let frame = 0;
+    let shownEnd = 0;
+    let prevFrame = performance.now();
+
+    const paint = () => {
+      const { samples } = store.state;
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      const plot = w - GUTTER;
+      const y = (deg: number) => 6 + ((Y_MAX - deg) / (Y_MAX - Y_MIN)) * (h - 12);
+      ctx.clearRect(0, 0, w, h);
+      ctx.font = colors.font;
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 1;
+      for (const t of Y_TICKS) {
+        ctx.fillStyle = colors.muted;
+        ctx.fillText(`${t}°`, 0, y(t));
+        if (t === 0) {
+          ctx.strokeStyle = colors.line;
+          ctx.beginPath();
+          ctx.moveTo(GUTTER, y(0));
+          ctx.lineTo(w, y(0));
+          ctx.stroke();
+        }
+      }
+      if (!samples.length) return;
+      const end = shownEnd;
+      const x = (t: number) => GUTTER + ((t - (end - WINDOW_MS)) / WINDOW_MS) * plot;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(GUTTER, 0, plot, h);
+      ctx.clip();
+      ctx.strokeStyle = colors.accent;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      samples.forEach((s, i) => {
+        const px = x(Date.parse(s.time));
+        const py = y(s.ankleDeg);
+        if (i) ctx.lineTo(px, py);
+        else ctx.moveTo(px, py);
+      });
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    const loop = (t: number) => {
+      frame = requestAnimationFrame(loop);
+      const dt = t - prevFrame;
+      prevFrame = t;
+      const { samples, sampleArrivedAt } = store.state;
+      if (samples.length) {
+        // advance by frame time and ease toward the data clock so bursty batches never make the trace jump backwards
+        const target = Date.parse(samples[samples.length - 1].time) + Math.min(t - sampleArrivedAt, 2_000) - PLAYBACK_DELAY_MS;
+        shownEnd = Math.abs(target - shownEnd) > 1_000 ? target : Math.max(shownEnd, shownEnd + dt + (target - shownEnd - dt) * 0.08);
+      }
+      paint();
+    };
+
+    const resize = () => {
+      const dpr = devicePixelRatio || 1;
+      const w = Math.round(el.clientWidth * dpr);
+      const h = Math.round(el.clientHeight * dpr);
+      if (el.width === w && el.height === h) return;
+      el.width = w;
+      el.height = h;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      paint();
+    };
+    readColors();
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(el);
+    const scheme = matchMedia("(prefers-color-scheme: dark)");
+    scheme.addEventListener("change", readColors);
+    frame = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+      scheme.removeEventListener("change", readColors);
+    };
+  }, [store, hasData]);
+
+  if (!hasData) return <Empty className="h-44">Waiting for live data from the brace.</Empty>;
   return (
-    <div className="h-44">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: -18 }}>
-          <XAxis
-            dataKey="t"
-            type="number"
-            domain={[end - 10_000, end]}
-            allowDataOverflow
-            ticks={[end - 10_000, end - 5_000, end]}
-            tickFormatter={(t: number) => (t === end ? "now" : `-${Math.round((end - t) / 1000)} s`)}
-            {...axis}
-          />
-          <YAxis domain={[-25, 20]} ticks={[-20, -10, 0, 10, 20]} unit="°" {...axis} />
-          <ReferenceLine y={0} stroke="var(--line)" />
-          <Line
-            dataKey="deg"
-            type="monotone"
-            stroke="var(--accent)"
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div>
+      <canvas ref={canvas} className="block h-40 w-full" aria-label="Live ankle angle trace" role="img" />
+      <div className="mt-1 flex justify-between pl-[30px] text-[11px] text-muted">
+        <span>-10 s</span>
+        <span>-5 s</span>
+        <span>now</span>
+      </div>
     </div>
   );
 }
@@ -86,7 +171,7 @@ function Clearance() {
 export function LiveCard() {
   const status = useLive((s) => s.status);
   const connection = useLive((s) => s.connection);
-  const lastSample = useLive((s) => s.samples.at(-1));
+  const lastSampleSec = useLive((s) => (s.samples.length ? Math.floor(Date.parse(s.samples[s.samples.length - 1].time) / 1000) : 0));
   const now = useNow();
 
   const wearing = !status
@@ -96,7 +181,7 @@ export function LiveCard() {
     : status.wearing
       ? "Wearing"
       : "Brace off";
-  const lag = now !== null && lastSample ? now - Date.parse(lastSample.time) : 0;
+  const lag = now !== null && lastSampleSec ? now - lastSampleSec * 1000 : 0;
 
   return (
     <Card

@@ -9,6 +9,7 @@ export type Connection = "connecting" | "open" | "closed";
 export interface LiveState {
   connection: Connection;
   samples: Sample[];
+  sampleArrivedAt: number;
   lastStep: Step | null;
   status: Status | null;
   events: CareEvent[];
@@ -22,6 +23,7 @@ const MAX_EVENTS = 100;
 const initial: LiveState = {
   connection: "connecting",
   samples: [],
+  sampleArrivedAt: 0,
   lastStep: null,
   status: null,
   events: [],
@@ -35,7 +37,7 @@ export function reduce(s: LiveState, msg: WsMessage): LiveState {
       const cutoff = Date.parse(msg.data.time) - WINDOW_MS;
       const kept = s.samples.filter((x) => Date.parse(x.time) >= cutoff);
       kept.push(msg.data);
-      return { ...s, samples: kept };
+      return { ...s, samples: kept, sampleArrivedAt: performance.now() };
     }
     case "step":
       return { ...s, lastStep: msg.data };
@@ -121,9 +123,14 @@ export function useLiveConnection() {
 
 export const LiveContext = createContext<LiveStore | null>(null);
 
-export function useLive<T>(select: (s: LiveState) => T): T {
+export function useLiveStore() {
   const store = useContext(LiveContext);
   if (!store) throw new Error("useLive must be used inside LiveContext");
+  return store;
+}
+
+export function useLive<T>(select: (s: LiveState) => T): T {
+  const store = useLiveStore();
   return useSyncExternalStore(
     store.subscribe,
     () => select(store.state),
