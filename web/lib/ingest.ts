@@ -43,6 +43,7 @@ export function parseIngest(input: Record<string, unknown>): IngestBody {
 export async function ingest(input: IngestBody) {
   const events = (input.events ?? []).map(event => ({ ...event, id: randomUUID() }));
   const steps = input.steps ?? [];
+  publishSamples(input.samples);
   const client = await db().connect();
   try {
     await client.query('BEGIN');
@@ -57,7 +58,6 @@ export async function ingest(input: IngestBody) {
     await client.query('ROLLBACK');
     throw error;
   } finally { client.release(); }
-  publishSamples(input.samples);
   for (const step of steps) publish({ kind: 'step', data: step });
   for (const event of events) publish({ kind: 'event', data: event });
   live.status = await getStatus();
