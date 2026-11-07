@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:setup": "tsx db/setup.ts",
     "seed": "tsx scripts/seed.ts",
+    "seed:clear": "tsx scripts/clear-demo.ts",
     "simulate": "tsx scripts/simulate.ts",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test"

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { db, patientId } from '../lib/db';
+import { clearDemo } from '../lib/demo';
 import { syntheticStep } from '../lib/synthetic';
 import type { Audience, CareEvent, Step, Terrain } from '../lib/types';
 
@@ -19,8 +20,7 @@ async function main() {
   try {
     await client.query('BEGIN');
     await client.query("SELECT pg_advisory_xact_lock(hashtext('afo-seed'))");
-    const existing = await client.query('SELECT 1 FROM steps WHERE patient_id=$1 LIMIT 1', [patientId]);
-    if (existing.rowCount) throw new Error('Patient already has steps. Seed requires an empty patient history.');
+    await clearDemo(client);
     for (let day = 0; day < 90; day++) {
       const date = new Date(start);
       date.setDate(date.getDate() + day);
@@ -61,16 +61,16 @@ async function main() {
       const off = new Date(date);
       off.setHours(22);
       addEvent(off, 'afo_off', 'Brace taken off');
-      await client.query(`INSERT INTO steps SELECT x.time,$1,x.terrain,x."minClearanceMm",x."peakDorsiDeg",x."strideMs",x."assistPct"
+      await client.query(`INSERT INTO steps SELECT x.time,$1,x.terrain,x."minClearanceMm",x."peakDorsiDeg",x."strideMs",x."assistPct",'seed'
         FROM jsonb_to_recordset($2::jsonb) AS x(time timestamptz,terrain text,"minClearanceMm" float8,"peakDorsiDeg" float8,"strideMs" float8,"assistPct" float8)`,
       [patientId, JSON.stringify(steps)]);
-      await client.query(`INSERT INTO events SELECT x.id,x.time,$1,x.type,x.severity,x.message,x.terrain
+      await client.query(`INSERT INTO events SELECT x.id,x.time,$1,x.type,x.severity,x.message,x.terrain,'seed'
         FROM jsonb_to_recordset($2::jsonb) AS x(id uuid,time timestamptz,type text,severity int,message text,terrain text)`, [patientId, JSON.stringify(events)]);
     }
     for (let visit = 0; visit < 3; visit++) {
       const date = new Date(now);
       date.setMonth(date.getMonth() - (2 - visit) * 3);
-      await client.query(`INSERT INTO clinic_scores (id,patient_id,date,alsfrs_r,walk_10m_sec,note) VALUES ($1,$2,$3,$4,$5,$6)`,
+      await client.query(`INSERT INTO clinic_scores (id,patient_id,date,alsfrs_r,walk_10m_sec,note,source) VALUES ($1,$2,$3,$4,$5,$6,'seed')`,
         [randomUUID(), patientId, date.toLocaleDateString('en-CA'), 36 - visit * 2, [11.8, 13.0, 14.2][visit], 'Synthetic quarterly clinic visit. 10 m walk with a cane.']);
     }
     const placeholders: Record<Audience, string> = {
@@ -103,7 +103,7 @@ The adaptive AFO is a prototype, not a proven ALS treatment. Demo placeholder, n
     };
     for (const audience of ['family', 'physician'] as const) {
       const from = audience === 'family' ? new Date(now.getTime() - 7 * 86400000) : start;
-      await client.query('INSERT INTO reports (id,patient_id,audience,range_start,range_end,markdown) VALUES ($1,$2,$3,$4,$5,$6)',
+      await client.query("INSERT INTO reports (id,patient_id,audience,range_start,range_end,markdown,source) VALUES ($1,$2,$3,$4,$5,$6,'seed')",
         [randomUUID(), patientId, audience, from.toISOString(), now.toISOString(), placeholders[audience]]);
     }
     await client.query('COMMIT');

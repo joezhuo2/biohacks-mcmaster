@@ -66,3 +66,9 @@ SELECT time_bucket(INTERVAL '1 day', time) AS bucket, patient_id,
 FROM steps GROUP BY bucket, patient_id WITH NO DATA;
 SELECT add_continuous_aggregate_policy('steps_1h', start_offset => INTERVAL '7 days', end_offset => INTERVAL '1 hour', schedule_interval => INTERVAL '15 minutes', if_not_exists => TRUE);
 SELECT add_continuous_aggregate_policy('steps_1d', start_offset => INTERVAL '7 days', end_offset => INTERVAL '1 day', schedule_interval => INTERVAL '1 hour', if_not_exists => TRUE);
+
+ALTER TABLE samples ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pi';
+ALTER TABLE steps ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pi';
+ALTER TABLE events ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pi';
+ALTER TABLE clinic_scores ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pi';
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pi';
