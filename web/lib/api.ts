@@ -23,7 +23,10 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { "content-type": "application/json", ...init?.headers },
   });
-  if (!res.ok) throw new ApiError(res.status, (await res.text()) || res.statusText);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.error ?? res.statusText);
+  }
   return res.json() as Promise<T>;
 }
 
