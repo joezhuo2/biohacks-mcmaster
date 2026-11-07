@@ -30,7 +30,7 @@ function stairs() {
 
 async function post(payload: IngestBody) {
   const response = await fetch(url, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-source': 'sim' }, body: JSON.stringify(payload),
     signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) throw new Error(`Ingest failed (${response.status}): ${await response.text()}`);

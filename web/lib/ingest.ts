@@ -40,19 +40,19 @@ export function parseIngest(input: Record<string, unknown>): IngestBody {
   return { samples, steps, events };
 }
 
-export async function ingest(input: IngestBody) {
+export async function ingest(input: IngestBody, source: 'pi' | 'sim' = 'pi') {
   const events = (input.events ?? []).map(event => ({ ...event, id: randomUUID() }));
   const steps = input.steps ?? [];
   publishSamples(input.samples);
   const client = await db().connect();
   try {
     await client.query('BEGIN');
-    await client.query(`INSERT INTO samples SELECT x.time, $1, x."ankleDeg", x."assistPct"
-      FROM jsonb_to_recordset($2::jsonb) AS x(time timestamptz, "ankleDeg" float8, "assistPct" float8)`, [patientId, JSON.stringify(input.samples)]);
-    await client.query(`INSERT INTO steps SELECT x.time, $1, x.terrain, x."minClearanceMm", x."peakDorsiDeg", x."strideMs", x."assistPct"
-      FROM jsonb_to_recordset($2::jsonb) AS x(time timestamptz, terrain text, "minClearanceMm" float8, "peakDorsiDeg" float8, "strideMs" float8, "assistPct" float8)`, [patientId, JSON.stringify(steps)]);
-    await client.query(`INSERT INTO events SELECT x.id, x.time, $1, x.type, x.severity, x.message, x.terrain
-      FROM jsonb_to_recordset($2::jsonb) AS x(id uuid, time timestamptz, type text, severity int, message text, terrain text)`, [patientId, JSON.stringify(events)]);
+    await client.query(`INSERT INTO samples SELECT x.time, $1, x."ankleDeg", x."assistPct", $3
+      FROM jsonb_to_recordset($2::jsonb) AS x(time timestamptz, "ankleDeg" float8, "assistPct" float8)`, [patientId, JSON.stringify(input.samples), source]);
+    await client.query(`INSERT INTO steps SELECT x.time, $1, x.terrain, x."minClearanceMm", x."peakDorsiDeg", x."strideMs", x."assistPct", $3
+      FROM jsonb_to_recordset($2::jsonb) AS x(time timestamptz, terrain text, "minClearanceMm" float8, "peakDorsiDeg" float8, "strideMs" float8, "assistPct" float8)`, [patientId, JSON.stringify(steps), source]);
+    await client.query(`INSERT INTO events SELECT x.id, x.time, $1, x.type, x.severity, x.message, x.terrain, $3
+      FROM jsonb_to_recordset($2::jsonb) AS x(id uuid, time timestamptz, type text, severity int, message text, terrain text)`, [patientId, JSON.stringify(events), source]);
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
