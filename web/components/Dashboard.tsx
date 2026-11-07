@@ -1,14 +1,16 @@
 "use client";
 
 import { MotionConfig, motion } from "motion/react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { LiveContext, useLiveConnection } from "@/hooks/useLive";
 import { useMode } from "@/hooks/useMode";
-import { FamilyView } from "./family/FamilyView";
+import { FamilyView as FamilyViewBase } from "./family/FamilyView";
 import { Header } from "./Header";
 import { spring } from "./motion";
-import { PhysicianView } from "./physician/PhysicianView";
+import { PhysicianView as PhysicianViewBase } from "./physician/PhysicianView";
 
+const FamilyView = memo(FamilyViewBase);
+const PhysicianView = memo(PhysicianViewBase);
 const modes = ["family", "physician"] as const;
 
 export function Dashboard() {
@@ -27,7 +29,10 @@ export function Dashboard() {
             visited.has(m) && (
               <motion.main
                 key={m}
-                hidden={mode !== m}
+                inert={mode !== m}
+                aria-hidden={mode !== m}
+                // invisible instead of display:none keeps chart sizes so returning to a view does not re-measure every chart
+                className={mode === m ? "" : "pointer-events-none invisible absolute inset-x-0 top-0 h-0 overflow-hidden"}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: mode === m ? 1 : 0 }}
                 transition={{ duration: 0.18, ease: "easeOut" }}

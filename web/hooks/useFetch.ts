@@ -22,5 +22,6 @@ export function useFetch<T>(path: string | null) {
   }, [path, nonce]);
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
-  return { ...state, reload, setData: (data: T) => setState({ data, loading: false }) };
+  const setData = useCallback((update: (data?: T) => T) => setState((s) => ({ data: update(s.data), loading: false })), []);
+  return { ...state, reload, setData };
 }
