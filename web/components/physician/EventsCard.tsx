@@ -1,13 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { useState } from "react";
 import { useEvents } from "@/hooks/useEvents";
 import type { EventType } from "@/lib/types";
 import { Chip } from "../Button";
 import { Card, Empty, Skeleton } from "../Card";
 import { fmtStamp, terrainLabel } from "../format";
-import { spring } from "../motion";
 import type { Range } from "./metrics";
 
 const filters: { id: string; label: string; types: EventType[] | null }[] = [
@@ -56,16 +55,13 @@ export function EventsCard({ from, range }: { from: number | null; range: Range 
       ) : !shown.length ? (
         <Empty>{error ? "Could not load events." : `No matching events in the last ${range} days.`}</Empty>
       ) : (
-        <ul className="-mx-2 max-h-[26rem] overflow-y-auto">
-          <AnimatePresence initial={false}>
+        <ul key={filter} className="-mx-2 max-h-[26rem] overflow-y-auto">
             {shown.slice(0, LIMIT).map((e) => (
               <motion.li
                 key={e.id}
-                layout="position"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={spring}
+                transition={{ duration: 0.15 }}
                 className="flex items-start gap-3 rounded-xl px-2 py-2.5 hover:bg-surface-2/60"
               >
                 <span className={`mt-1.5 size-2 shrink-0 rounded-full ${dot[e.type] ?? "bg-faint"}`} />
@@ -83,7 +79,6 @@ export function EventsCard({ from, range }: { from: number | null; range: Range 
                 </div>
               </motion.li>
             ))}
-          </AnimatePresence>
           {shown.length > LIMIT && (
             <li className="px-2 py-3 text-center text-xs text-muted">Showing the latest {LIMIT} of {shown.length}.</li>
           )}
