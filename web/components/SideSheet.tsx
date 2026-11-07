@@ -55,7 +55,7 @@ export function SideSheet({
                 {subtitle && <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>}
               </div>
               <Button variant="secondary" onClick={onClose} autoFocus aria-label="Close" className="size-8 px-0">
-                <svg viewBox="0 0 12 12" className="size-3" aria-hidden>
+                <svg viewBox="0 0 12 12" className="size-3 shrink-0" aria-hidden>
                   <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
               </Button>
