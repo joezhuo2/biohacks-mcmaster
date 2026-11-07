@@ -74,7 +74,7 @@ export function ReportsCard({ range, today }: { range: Range; today: number | nu
             transition={spring}
             className="overflow-hidden"
           >
-            <div className="mt-4 space-y-2.5 rounded-2xl bg-surface-2/60 p-4" aria-live="polite">
+            <div className="mt-4 space-y-2.5 rounded-lg bg-surface-2/60 p-4" aria-live="polite">
               <p className="text-[13px] text-muted">Writing the report for the last {range} days. This can take a few seconds.</p>
               <Skeleton className="h-3 w-3/4 bg-line" />
               <Skeleton className="h-3 bg-line" />
@@ -97,7 +97,7 @@ export function ReportsCard({ range, today }: { range: Range; today: number | nu
                 onClick={() => show(r.id)}
                 whileTap={press}
                 transition={pressTransition}
-                className="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-surface-2/60 focus-visible:outline-2 focus-visible:outline-accent"
+                className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2.5 text-left hover:bg-surface-2/60 focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <span className="text-sm font-medium">{span(r)}</span>
                 <span className="text-xs text-muted tabular">Created {fmtStamp(r.createdAt)}</span>

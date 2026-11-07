@@ -62,7 +62,7 @@ export function EventsCard({ from, range }: { from: number | null; range: Range 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.15 }}
-                className="flex items-start gap-3 rounded-xl px-2 py-2.5 hover:bg-surface-2/60"
+                className="flex items-start gap-3 rounded-md px-2 py-2.5 hover:bg-surface-2/60"
               >
                 <span className={`mt-1.5 size-2 shrink-0 rounded-full ${dot[e.type] ?? "bg-faint"}`} />
                 <div className="min-w-0 flex-1">

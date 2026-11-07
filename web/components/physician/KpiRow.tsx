@@ -43,7 +43,7 @@ export function KpiRow({
     return (
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
         {kpis.map((k) => (
-          <Skeleton key={k.key} className="h-[7.5rem] rounded-3xl" />
+          <Skeleton key={k.key} className="h-[7.5rem] rounded-xl" />
         ))}
       </div>
     );
@@ -64,7 +64,7 @@ export function KpiRow({
         const v = cur[k.key];
         const p = prev?.[k.key];
         return (
-          <section key={k.key} className="rounded-3xl bg-surface p-5 shadow-card">
+          <section key={k.key} className="rounded-xl bg-surface p-5 shadow-card">
             <div className="text-[13px] text-muted">{k.label}</div>
             <div className="mt-2 flex items-baseline gap-1">
               <span className="text-[2rem] font-semibold leading-none tracking-display tabular">

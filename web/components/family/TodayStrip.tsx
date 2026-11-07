@@ -67,7 +67,7 @@ export function TodayStrip({
         </div>
       }
     >
-      <div className="relative h-12 rounded-2xl bg-surface-2/70">
+      <div className="relative h-12 rounded-lg bg-surface-2/70">
         <div className="absolute inset-y-0 left-0 rounded-l-2xl bg-line" style={{ width: `${nowPct}%` }} />
         {stairs.map(([a, b]) => (
           <span

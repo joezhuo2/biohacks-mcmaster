@@ -47,7 +47,7 @@ export function SideSheet({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0.6 }}
             transition={spring}
-            className="absolute inset-y-2 right-2 flex w-[min(640px,calc(100%-16px))] flex-col overflow-hidden rounded-3xl bg-surface shadow-float"
+            className="absolute inset-y-2 right-2 flex w-[min(640px,calc(100%-16px))] flex-col overflow-hidden rounded-xl bg-surface shadow-float"
           >
             <header className="flex items-start justify-between gap-4 px-7 pt-6 pb-4">
               <div>

@@ -31,7 +31,7 @@ export function NearTripSheet({ alert, onDismiss }: { alert: CareEvent | null; o
           exit="hidden"
           transition={spring}
           onAnimationStart={(def) => def === "shown" && chime()}
-          className="fixed inset-x-0 top-3 z-50 mx-auto w-[min(520px,calc(100%-24px))] rounded-3xl bg-surface p-5 shadow-float"
+          className="fixed inset-x-0 top-3 z-50 mx-auto w-[min(520px,calc(100%-24px))] rounded-xl bg-surface p-5 shadow-float"
         >
           <div className="flex gap-4">
             <span className={`mt-1.5 size-3 shrink-0 rounded-full ${alert.type === "fall" ? "bg-danger" : "bg-warn"}`} />

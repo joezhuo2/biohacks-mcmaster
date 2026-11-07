@@ -112,7 +112,7 @@ export function Heatmap({ cells, loading, today }: { cells?: HourCell[]; loading
                         y={y}
                         width={CELL}
                         height={CELL}
-                        rx={6}
+                        rx={3}
                         style={{ fill: cell?.clearance ? fill(scale(cell.clearance)) : "var(--surface-2)" }}
                         opacity={cell?.clearance ? 1 : 0.5}
                       />

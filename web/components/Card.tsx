@@ -12,7 +12,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <section className={`rounded-3xl bg-surface p-6 shadow-card ${className}`}>
+    <section className={`rounded-xl bg-surface p-6 shadow-card ${className}`}>
       {(title || action) && (
         <header className="mb-4 flex min-h-7 flex-wrap items-center justify-between gap-3">
           <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{title}</h2>
@@ -26,14 +26,14 @@ export function Card({
 
 export function Empty({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`flex min-h-24 items-center justify-center rounded-2xl bg-surface-2/60 px-4 py-6 text-center text-sm text-muted ${className}`}>
+    <div className={`flex min-h-24 items-center justify-center rounded-lg bg-surface-2/60 px-4 py-6 text-center text-sm text-muted ${className}`}>
       {children}
     </div>
   );
 }
 
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-2xl bg-surface-2 motion-reduce:animate-none ${className}`} />;
+  return <div className={`animate-pulse rounded-lg bg-surface-2 motion-reduce:animate-none ${className}`} />;
 }
 
 export function Disclaimer() {

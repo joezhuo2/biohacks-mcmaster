@@ -11,7 +11,7 @@ import { fmtDayKey, localDayKey } from "../format";
 import { spring } from "../motion";
 
 const field =
-  "h-9 w-full rounded-xl bg-surface-2 px-3 text-sm text-fg placeholder:text-faint outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "h-9 w-full rounded-md bg-surface-2 px-3 text-sm text-fg placeholder:text-faint outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 type Draft = { date: string; alsfrs: string; walk: string; note: string };
 
@@ -69,7 +69,7 @@ function AddVisit({ onAdded, onClose }: { onAdded: (s: ClinicScore) => void; onC
   }
 
   return (
-    <form onSubmit={submit} className="mt-3 grid gap-3 rounded-2xl bg-surface-2/50 p-4 sm:grid-cols-[9.5rem_7rem_7rem_1fr]" noValidate>
+    <form onSubmit={submit} className="mt-3 grid gap-3 rounded-lg bg-surface-2/50 p-4 sm:grid-cols-[9.5rem_7rem_7rem_1fr]" noValidate>
       <label className="text-xs text-muted">
         Date
         <input type="date" className={`${field} mt-1`} value={draft.date} onChange={set("date")} required />
