@@ -34,12 +34,12 @@ export function useNow(): number | null {
 
 const DAY = 86_400_000;
 
+function todaySnapshot() {
+  return new Date(snapshot()).setHours(0, 0, 0, 0);
+}
+
 export function useToday(): number | null {
-  const t = useNow();
-  if (t === null) return null;
-  const d = new Date(t);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
+  return useSyncExternalStore(subscribe, todaySnapshot, () => null);
 }
 
 export { DAY };

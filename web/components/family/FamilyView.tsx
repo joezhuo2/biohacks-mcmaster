@@ -7,11 +7,16 @@ import { useNow, useToday } from "@/hooks/useNow";
 import { useReportList } from "@/hooks/useReports";
 import { paths } from "@/lib/api";
 import type { DailyMetrics, Report } from "@/lib/types";
+import { memo } from "react";
 import { Hero } from "./Hero";
 import { NearTripSheet } from "./NearTripSheet";
-import { TodayStrip } from "./TodayStrip";
-import { WeeklyStability } from "./WeeklyStability";
-import { WeeklySummary } from "./WeeklySummary";
+import { TodayStrip as TodayStripBase } from "./TodayStrip";
+import { WeeklyStability as WeeklyStabilityBase } from "./WeeklyStability";
+import { WeeklySummary as WeeklySummaryBase } from "./WeeklySummary";
+
+const TodayStrip = memo(TodayStripBase);
+const WeeklyStability = memo(WeeklyStabilityBase);
+const WeeklySummary = memo(WeeklySummaryBase);
 
 const ALERT_TTL = 15 * 60_000;
 
