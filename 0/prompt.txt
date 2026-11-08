@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bzgv1pk3j</task-id>
+<tool-use-id>toolu_0195RTmoAbiYPhsajWtRydgv</tool-use-id>
+<output-file>C:\Users\Joe\AppData\Local\Temp\claude\32b162dd57911155\b190d9ef-975c-40f2-a201-634a0b6fd526\tasks\bzgv1pk3j.output</output-file>
+<status>failed</status>
+<summary>Background command "Start production server on 3001" failed with exit code 1</summary>
+</task-notification>
