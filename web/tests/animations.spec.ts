@@ -39,6 +39,10 @@ async function mode(page: Page, name: 'Family' | 'Physician') {
   await page.getByRole('radiogroup', { name: "View" }).getByRole('radio', { name }).click();
 }
 
+async function section(page: Page, name: string) {
+  await page.getByRole('button', { name, exact: true }).filter({ visible: true }).click();
+}
+
 async function nearTrip(page: Page) {
   const time = new Date().toISOString();
   const res = await page.request.post('/api/ingest', {
@@ -71,17 +75,19 @@ test('mode switch fades between views both ways', async ({ page }) => {
 
 test('live trace scrolls every frame without blank or backward frames', async ({ page }) => {
   await mode(page, 'Physician');
+  await section(page, 'Overview');
   const canvas = page.getByRole('img', { name: 'Live ankle angle trace' });
   await expect(canvas).toBeVisible({ timeout: 15_000 });
   await page.waitForTimeout(11_000);
   const result = await canvas.evaluate(async (el: HTMLCanvasElement) => {
     const ctx = el.getContext('2d')!;
+    const accent = getComputedStyle(el).getPropertyValue('--accent').trim().match(/[0-9a-f]{2}/gi)!.map(h => parseInt(h, 16));
     const { width, height } = el;
     const gutter = Math.round(30 * (width / el.clientWidth));
     const cols = Array.from({ length: 24 }, (_, i) => gutter + Math.floor(((width - gutter - 2) * (i + 0.5)) / 24));
     const lineRows = (x: number) => {
       const data = ctx.getImageData(x, 0, 1, height).data;
-      for (let y = 0; y < height; y++) if (data[y * 4 + 3] > 200 && data[y * 4] > 200 && data[y * 4 + 1] < 160) return y;
+      for (let y = 0; y < height; y++) if (data[y * 4 + 3] > 200 && accent.every((c, i) => Math.abs(data[y * 4 + i] - c) < 40)) return y;
       return -1;
     };
     let frames = 0, blank = 0, still = 0, prev = '', prevHits = -1;
@@ -110,6 +116,7 @@ test('live trace scrolls every frame without blank or backward frames', async ({
 
 test('range picker updates KPI deltas', async ({ page }) => {
   await mode(page, 'Physician');
+  await section(page, 'Overview');
   const range = page.getByRole('radiogroup', { name: 'Range' });
   for (const [label, short] of [['7 days', '7 d'], ['90 days', '90 d'], ['30 days', '30 d']] as const) {
     await smooth(page, `range ${label}`, () => range.getByRole('radio', { name: label }).click());
@@ -119,6 +126,7 @@ test('range picker updates KPI deltas', async ({ page }) => {
 
 test('event filter chips switch quickly', async ({ page }) => {
   await mode(page, 'Physician');
+  await section(page, 'Patterns');
   const group = page.getByRole('group', { name: 'Filter events' });
   for (const name of ['Near-trip', 'Fall', 'Assist change', 'Stairs', 'All']) {
     await smooth(page, `chip ${name}`, () => group.getByRole('button', { name, exact: true }).click(), 400);
@@ -128,6 +136,7 @@ test('event filter chips switch quickly', async ({ page }) => {
 
 test('add visit form expands and collapses', async ({ page }) => {
   await mode(page, 'Physician');
+  await section(page, 'Progression');
   const toggle = page.getByRole('button', { name: 'Add visit' });
   await smooth(page, 'expand add visit', () => toggle.click());
   await expect(page.getByRole('button', { name: 'Close' }).first()).toHaveAttribute('aria-expanded', 'true');
@@ -137,6 +146,7 @@ test('add visit form expands and collapses', async ({ page }) => {
 
 test('report side sheet slides in and out with a visible close icon', async ({ page }) => {
   await mode(page, 'Physician');
+  await section(page, 'Reports');
   await smooth(page, 'open report sheet', () => page.getByRole('button', { name: /to Nov|to [A-Z][a-z]{2} \d/ }).first().click());
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
@@ -167,6 +177,7 @@ test('near-trip sheet drops in for family and dismisses', async ({ page }) => {
 test('reduced motion still switches modes and opens sheets', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await mode(page, 'Physician');
+  await section(page, 'Reports');
   await expect(page.getByRole('heading', { name: 'Alex Chen' })).toBeVisible();
   await page.getByRole('button', { name: /to Nov|to [A-Z][a-z]{2} \d/ }).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
