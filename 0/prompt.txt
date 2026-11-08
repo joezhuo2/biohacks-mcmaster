@@ -1,0 +1,6 @@
+1. On-screen “data engine” panel (about 1.5 h). Show live ingest rate in rows per second, query time on rollups vs raw rows (e.g. 4 ms vs 900 ms), and the compression ratio. This makes “performance-driven” visible to judges in one glance.
+2. Timescale hyperfunctions (about 1 h). `lttb` downsamples 90 days to around 300 chart points inside the database, and percentile functions give true p10/p90 clearance bands on the progression chart. It’s faster, and judges will recognise the functions as Timescale-specific.
+3. “Days like today” similarity search with pgvector (about 3 h, biggest wow). Turn each day’s gait into a vector (clearance, ankle lift, stride variability, assist) and store it in Tiger with pgvectorscale. The physician card would say “Today resembles 12 Oct” and “Alex’s gait is 70% of the way from the PhysioNet control average to the ALS average”. That’s a novel progression measure built on the data you already have.
+
+
+implement
