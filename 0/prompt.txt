@@ -1,0 +1,1 @@
+explain how the project uses tigerdata and gemini api, for the pitch/demo video
