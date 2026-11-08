@@ -40,7 +40,7 @@ export function SegmentedControl<T extends string | number>({
               <motion.span
                 layoutId={`${id}-thumb`}
                 transition={spring}
-                className="absolute inset-0 rounded-full bg-surface shadow-[0_1px_3px_rgb(0_0_0/0.12)]"
+                className="absolute inset-0 rounded-full bg-surface shadow-control"
               />
             )}
             <span className="relative">{o.label}</span>

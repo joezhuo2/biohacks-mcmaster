@@ -6,7 +6,7 @@ import { press, pressTransition } from "./motion";
 type Variant = "primary" | "secondary" | "ghost";
 
 const styles: Record<Variant, string> = {
-  primary: "bg-accent-strong text-white hover:bg-accent",
+  primary: "bg-accent-strong text-on-accent hover:bg-accent",
   secondary: "bg-surface-2 text-fg hover:bg-line",
   ghost: "text-muted hover:text-fg hover:bg-surface-2",
 };
