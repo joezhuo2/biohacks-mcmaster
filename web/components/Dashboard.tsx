@@ -4,6 +4,7 @@ import { MotionConfig, motion } from "motion/react";
 import { memo, useState } from "react";
 import { LiveContext, useLiveConnection } from "@/hooks/useLive";
 import { useMode } from "@/hooks/useMode";
+import { FallAlert } from "./FallAlert";
 import { FamilyView as FamilyViewBase } from "./family/FamilyView";
 import { Header } from "./Header";
 import { spring } from "./motion";
@@ -24,6 +25,7 @@ export function Dashboard() {
     <LiveContext value={live}>
       <MotionConfig reducedMotion="user" transition={spring}>
         <Header mode={mode} onMode={setMode} />
+        <FallAlert />
         {modes.map(
           (m) =>
             visited.has(m) && (
