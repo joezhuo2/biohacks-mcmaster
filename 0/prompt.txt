@@ -1,0 +1,5 @@
+make it so that when i click a hotkey 'a', it creates a fall detected warning pop up with a description and a subtitle that tells us the wife was messaged
+
+---
+
+Commit the working tree changes with a sensible message.
