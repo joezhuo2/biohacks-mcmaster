@@ -1,0 +1,49 @@
+Base directory for this skill: C:\Users\Joe\.claude\skills\kiro-delegate
+
+# kiro-delegate
+
+Run `kiro-cli chat --no-interactive` as a worker. Claude stays orchestrator and reviewer.
+
+## Gate (automatic)
+
+`kiro-run.ps1` first runs `kiro-gate.ps1`. It blocks (exit 3, `GATE_BLOCKED: <why>`) if `kiro-cli` is missing or not logged in. If blocked, use a normal Claude subagent instead. If the user needs to sign in, tell them to run `kiro-cli login` (browser sign-in); never try to log in yourself. A usage or credit limit shows up as `KIRO_LIMIT`; fall back, do not retry.
+
+## Tier choice (Claude decides)
+
+Pass `-Tier`; the script lists `kiro-cli chat --list-models` and picks the newest model of that tier.
+
+- `haiku`: boilerplate, docs, formatting, mechanical edits, log/JSON munging.
+- `sonnet` (default): features with a clear spec, multi-file fixes, test suites, reviews.
+- `opus`: architecture, subtle bugs, large refactors, hard reasoning.
+
+`-Model <exact id>` overrides the tier.
+
+## How
+
+The scripts sit next to this SKILL.md; use this skill's base directory as `<skill dir>`:
+
+```powershell
+& "<skill dir>\kiro-run.ps1" -Prompt "<task>" -Cwd "<project dir>" [-Tier haiku|sonnet|opus] [-Model <id>] [-Write] [-TimeoutSec 900]
+```
+
+- Default is read-only (`--trust-tools=fs_read`).
+- `-Write` uses `--trust-all-tools`: Kiro may run commands and edit files. Use only on a git repo you can diff, never with secrets in the prompt.
+- Long jobs: run with `run_in_background` and wait for the notification.
+- Output starts with `model=<id>` then Kiro's reply.
+
+## Prompt template
+
+Kiro has no access to this conversation. Include: goal, files in scope and out of scope, conventions (point at an example file), done criteria with a verify command, and "Do not commit. Report changed files and anything unverified."
+
+## After Kiro returns (mandatory)
+
+1. Read `git diff` / `git status`.
+2. Re-run the verify command yourself.
+3. Fix small issues directly; re-delegate or take over for big misses.
+4. Tell the user what Kiro did and what you verified.
+
+## Notes
+
+- Kiro CLI on Windows: install the official MSI listed in `https://prod.download.cli.kiro.dev/stable/latest/manifest.json` (check the sha256), then `kiro-cli login`.
+- Model ids come from the user's own login; if no model matches the tier, `KIRO_NO_MODEL` prints the listing.
+- Headless auth alternative: `KIRO_API_KEY` (needs a Pro-or-higher Kiro plan).
