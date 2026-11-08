@@ -1,0 +1,1 @@
+the navbar in the family tab is very laggy, from now just commit push on main, also use skeleton loaders + perf improvements, use kiro/codex, make both navbars left center aligned
