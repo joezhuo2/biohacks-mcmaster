@@ -88,3 +88,10 @@ CREATE TABLE IF NOT EXISTS gait_days (
   PRIMARY KEY (patient_id, day)
 );
 CREATE INDEX IF NOT EXISTS gait_days_embedding ON gait_days USING diskann (embedding vector_l2_ops);
+
+CREATE TABLE IF NOT EXISTS forecasts (
+  made_on date NOT NULL, patient_id text NOT NULL, metric text NOT NULL, day date NOT NULL,
+  p10 double precision, p50 double precision, p90 double precision,
+  PRIMARY KEY (patient_id, made_on, metric, day)
+);
+SELECT create_hypertable('forecasts', 'made_on', if_not_exists => TRUE);

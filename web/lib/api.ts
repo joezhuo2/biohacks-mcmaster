@@ -45,6 +45,7 @@ export const paths = {
   engine: () => "/api/engine",
   clearance: (days: number) => `/api/metrics/clearance${query({ days })}`,
   similarDays: () => "/api/similar-days",
+  forecast: () => "/api/forecast",
 };
 
 export type NewClinicScore = Omit<ClinicScore, "id">;

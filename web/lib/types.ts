@@ -123,3 +123,19 @@ export interface SimilarDays {
   matches: (GaitDay & { distance: number })[];
   alsProgress: { overall: number; stride: number; rhythm: number } | null;
 }
+
+export type ForecastMetric = 'clearance' | 'eveningClearance' | 'dorsi' | 'assist' | 'strideCv';
+
+export interface MetricForecast {
+  metric: ForecastMetric; label: string; unit: string;
+  history: { day: string; v: number }[];
+  points: { day: string; p10: number; p50: number; p90: number }[];
+  slopePerDay: number; r2: number;
+  threshold: number | null; crossDay: string | null; crossEarliest: string | null; crossLatest: string | null;
+  backtest: { mae: number; coverage: number; n: number } | null;
+}
+
+export interface Forecast {
+  generatedAt: string; horizonDays: number; metrics: MetricForecast[];
+  nearTrips: { perWeekNow: number; perWeekIn90: number } | null;
+}

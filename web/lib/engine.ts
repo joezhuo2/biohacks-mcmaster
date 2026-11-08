@@ -1,12 +1,13 @@
 import physionet from '../data/physionet-strides.json';
 import { db, patientId, query } from './db';
 import { clamp } from './metrics';
-import type { ClearanceSeries, EngineStats, GaitDay, SimilarDays } from './types';
+import type { ClearanceSeries, EngineStats, Forecast, ForecastMetric, GaitDay, MetricForecast, SimilarDays } from './types';
 
 const shared = globalThis as typeof globalThis & {
   afoIngest?: [number, number][];
   afoBench?: { at: number; rawMs: number; rollupMs: number; rows: number };
   afoGaitAt?: number;
+  afoForecast?: { at: number; value: Forecast };
 };
 const ingested = shared.afoIngest ??= [];
 const windowMs = 10_000;
@@ -108,4 +109,120 @@ export async function getSimilarDays(): Promise<SimilarDays> {
   const day: GaitDay = { day: today.day, clearanceMm: today.clearanceMm, dorsiDeg: today.dorsiDeg,
     strideMs: today.strideMs, strideCv: today.strideCv, assistPct: today.assistPct };
   return { today: day, matches, alsProgress: alsProgress(day) };
+}
+
+const forecastMetrics: { metric: ForecastMetric; label: string; unit: string; threshold: number | null }[] = [
+  { metric: 'clearance', label: 'Toe clearance', unit: 'mm', threshold: 12 },
+  { metric: 'eveningClearance', label: 'Evening clearance', unit: 'mm', threshold: 12 },
+  { metric: 'dorsi', label: 'Ankle lift', unit: 'deg', threshold: null },
+  { metric: 'assist', label: 'Brace assist', unit: '%', threshold: 100 },
+  { metric: 'strideCv', label: 'Stride variability', unit: '', threshold: null },
+];
+
+async function fitForecast(cutoff: number, today: string) {
+  return query<Pick<MetricForecast, 'metric' | 'history' | 'points' | 'slopePerDay' | 'r2' | 'backtest'>>(`
+    WITH daily AS (
+      SELECT (bucket AT TIME ZONE 'UTC')::date AS day, avg_clearance_mm, avg_peak_dorsi_deg,
+        avg_assist_pct, stride_stddev / NULLIF(avg_stride_ms, 0) AS stride_cv
+      FROM steps_1d WHERE patient_id=$1 AND steps >= 50
+        AND bucket >= (($3::date - 89)::timestamp AT TIME ZONE 'UTC')
+        AND bucket < (($3::date + 1)::timestamp AT TIME ZONE 'UTC')
+    ), evening AS (
+      SELECT (bucket AT TIME ZONE 'UTC')::date AS day,
+        sum(avg_clearance_mm * steps) / NULLIF(sum(steps) FILTER (WHERE avg_clearance_mm IS NOT NULL), 0) AS v
+      FROM steps_1h WHERE patient_id=$1
+        AND bucket >= (($3::date - 89)::timestamp AT TIME ZONE 'UTC')
+        AND bucket < (($3::date + 1)::timestamp AT TIME ZONE 'UTC')
+        AND extract(hour FROM bucket AT TIME ZONE 'UTC') >= 18
+      GROUP BY 1
+    ), history AS (
+      SELECT d.day, (d.day - DATE '1970-01-01')::float8 AS x, m.metric, m.v
+      FROM daily d LEFT JOIN evening e USING (day)
+      CROSS JOIN LATERAL (VALUES ('clearance', d.avg_clearance_mm), ('eveningClearance', e.v),
+        ('dorsi', d.avg_peak_dorsi_deg), ('assist', d.avg_assist_pct), ('strideCv', d.stride_cv)) m(metric, v)
+      WHERE m.v > '-Infinity'::float8 AND m.v < 'Infinity'::float8
+    ), windows AS (
+      SELECT metric, max(day) - $2::int AS cutoff, count(*) AS days,
+        jsonb_agg(jsonb_build_object('day', to_char(day, 'YYYY-MM-DD'), 'v', v) ORDER BY day) AS history
+      FROM history GROUP BY metric
+    ), aggregates AS (
+      SELECT h.metric, max(h.day) AS last_day, stats_agg(h.v, h.x) AS a
+      FROM history h JOIN windows w USING (metric) WHERE h.day <= w.cutoff GROUP BY h.metric
+    ), fits AS (
+      SELECT metric, last_day, slope(a) AS slope, intercept(a) AS intercept,
+        CASE WHEN stddev_y(a, 'pop') = 0 THEN 1 ELSE greatest(0, least(1, determination_coeff(a))) END AS r2,
+        num_vals(a)::float8 AS n, average_x(a) AS avg_x, variance_x(a, 'pop') AS var_x,
+        stddev_y(a, 'pop') AS stddev_y
+      FROM aggregates WHERE num_vals(a) > 2 AND variance_x(a, 'pop') > 0
+    ), models AS (
+      SELECT *, stddev_y * sqrt(1 - r2) * sqrt(n / (n - 2)) AS sigma FROM fits
+    ), targets AS (
+      SELECT m.metric, m.last_day + h AS day, NULL::float8 AS actual
+      FROM models m CROSS JOIN generate_series(1, 90) h WHERE $2::int = 0
+      UNION ALL
+      SELECT h.metric, h.day, h.v FROM history h JOIN windows w USING (metric)
+      WHERE $2::int > 0 AND w.days >= 45 AND h.day > w.cutoff
+    ), predictions AS (
+      SELECT t.*, m.intercept + m.slope * (t.day - DATE '1970-01-01') AS p50,
+        1.645 * m.sigma * sqrt(1 + 1 / m.n +
+          power((t.day - DATE '1970-01-01') - m.avg_x, 2) / (m.n * m.var_x)) AS half
+      FROM targets t JOIN models m USING (metric)
+    ), results AS (
+      SELECT metric, jsonb_agg(jsonb_build_object('day', to_char(day, 'YYYY-MM-DD'),
+        'p10', p50 - half, 'p50', p50, 'p90', p50 + half) ORDER BY day) AS points,
+        CASE WHEN count(actual) > 0 THEN jsonb_build_object('mae', avg(abs(actual - p50)),
+          'coverage', avg((actual BETWEEN p50 - half AND p50 + half)::int), 'n', count(actual)) END AS backtest
+      FROM predictions GROUP BY metric
+    )
+    SELECT w.metric, w.history, COALESCE(r.points, '[]'::jsonb) AS points,
+      COALESCE(m.slope, 0) AS "slopePerDay", COALESCE(m.r2, 0) AS r2, r.backtest
+    FROM windows w LEFT JOIN models m USING (metric) LEFT JOIN results r USING (metric)`, [patientId, cutoff, today]);
+}
+
+export async function getForecast(): Promise<Forecast> {
+  if (shared.afoForecast && Date.now() - shared.afoForecast.at < 300_000) return shared.afoForecast.value;
+  const generatedAt = new Date().toISOString();
+  const today = generatedAt.slice(0, 10);
+  const [fits, backtests, [trips]] = await Promise.all([
+    fitForecast(0, today), fitForecast(30, today),
+    query<{ nearTrips: Forecast['nearTrips'] }>(`
+      WITH counts AS (
+        SELECT date_trunc('week', time AT TIME ZONE 'UTC')::date AS week, count(*) AS n
+        FROM events WHERE patient_id=$1 AND type='near_trip'
+          AND time >= (($2::date - 89)::timestamp AT TIME ZONE 'UTC')
+          AND time < (($2::date + 1)::timestamp AT TIME ZONE 'UTC') GROUP BY 1
+      ), weeks AS (
+        SELECT day::date AS week FROM generate_series(date_trunc('week', ($2::date - 89)::timestamp),
+          date_trunc('week', $2::date::timestamp), INTERVAL '1 week') day
+      ), series AS (
+        SELECT ((w.week - min(w.week) OVER ()) / 7)::float8 AS x, COALESCE(c.n, 0) AS n
+        FROM weeks w LEFT JOIN counts c USING (week)
+      ), fit AS (
+        SELECT stats_agg(ln(n + 0.5)::float8, x) AS a, max(x) AS last_x, sum(n) AS total FROM series
+      )
+      SELECT CASE WHEN total > 0 THEN jsonb_build_object(
+        'perWeekNow', greatest(0, exp(intercept(a) + slope(a) * last_x) - 0.5),
+        'perWeekIn90', greatest(0, exp(intercept(a) + slope(a) * (last_x + 13)) - 0.5)) END AS "nearTrips"
+      FROM fit`, [patientId, today]),
+  ]);
+  const metrics: MetricForecast[] = forecastMetrics.map(meta => {
+    const fit = fits.find(row => row.metric === meta.metric);
+    const points = fit?.points ?? [];
+    const past = (v?: number) => v !== undefined && (meta.metric === 'assist' ? v >= meta.threshold! : v <= meta.threshold!);
+    const cross = (bound: 'p10' | 'p50' | 'p90') => meta.threshold === null || past(fit?.history.at(-1)?.v) ? null :
+      points.find(point => meta.metric === 'assist' ? point[bound] >= meta.threshold! : point[bound] <= meta.threshold!)?.day ?? null;
+    return { ...meta, history: fit?.history ?? [], points, slopePerDay: fit?.slopePerDay ?? 0, r2: fit?.r2 ?? 0,
+      crossDay: cross('p50'), crossEarliest: cross(meta.metric === 'assist' ? 'p90' : 'p10'),
+      crossLatest: cross(meta.metric === 'assist' ? 'p10' : 'p90'),
+      backtest: backtests.find(row => row.metric === meta.metric)?.backtest ?? null };
+  });
+  await query(`INSERT INTO forecasts (made_on, patient_id, metric, day, p10, p50, p90)
+    SELECT current_date, $1, p.metric, p.day, p.p10, p.p50, p.p90
+    FROM jsonb_to_recordset($2::jsonb) AS p(metric text, day date, p10 float8, p50 float8, p90 float8)
+    ON CONFLICT (patient_id, made_on, metric, day) DO UPDATE
+      SET p10 = EXCLUDED.p10, p50 = EXCLUDED.p50, p90 = EXCLUDED.p90`,
+    [patientId, JSON.stringify(metrics.flatMap(({ metric, points }) => points.map(point => ({ metric, ...point }))))]);
+  const value: Forecast = { generatedAt, horizonDays: 90, metrics, nearTrips: trips.nearTrips };
+  shared.afoForecast = { at: Date.now(), value };
+  return value;
 }
