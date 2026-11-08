@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>b4mo0i92i</task-id>
+<tool-use-id>toolu_01GkgdmhZQC5L4wcwGyW63oN</tool-use-id>
+<output-file>C:\Users\Joe\AppData\Local\Temp\claude\32b162dd57911155\15018d13-43ec-4e72-9426-d72687cd4d6a\tasks\b4mo0i92i.output</output-file>
+<status>completed</status>
+<summary>Background command "Delegate README rewrite to Codex" completed (exit code 0)</summary>
+</task-notification>
