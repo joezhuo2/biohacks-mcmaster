@@ -1,0 +1,1 @@
+add a side navbar that reorganizes the cards, should be on the left, same transitions as the rest of the app
