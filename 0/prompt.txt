@@ -1,0 +1,2 @@
+@"C:\Users\Joe\Downloads\biohacks.pdf"
+use codex/kiro subagents to build the dashboard, ask as many design questions as possible before starting, use https://github.com/emilkowalski/skills apple-design skill
