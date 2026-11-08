@@ -25,7 +25,7 @@
   <a href="#contributing">Contributing</a>
 </p>
 
-> AFO Care is a care dashboard and backend for an adaptive ankle-foot orthosis (AFO), built for BioHacks McMaster 2026. It follows Alex Chen, the event's fictional patient: a 47-year-old teacher with ALS and right foot drop. Family members see brace status, stair incidents and a weekly summary. Physicians see live ankle movement, gait trends, clinic scores, forecasts and Gemini reports. A simulator and seeded history let the dashboard run without brace hardware.
+> Elevait is a care dashboard and backend for an adaptive ankle-foot orthosis (AFO), built for BioHacks McMaster 2026. It follows Alex Chen, the event's fictional patient: a 47-year-old teacher with ALS and right foot drop. Family members see brace status, stair incidents and a weekly summary. Physicians see live ankle movement, gait trends, clinic scores, forecasts and Gemini reports. A simulator and seeded history let the dashboard run without brace hardware.
 
 ## Features
 
