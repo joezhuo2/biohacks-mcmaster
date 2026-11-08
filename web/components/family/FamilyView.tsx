@@ -59,8 +59,8 @@ export function FamilyView({ dismissed, onDismiss }: { dismissed: string | null;
   ), [daily.data, daily.loading, report, reports.loading]);
 
   return (
-    <div className="mx-auto max-w-5xl px-6 pt-8 pb-16">
-      <div className="grid gap-6 lg:grid-cols-[56px_minmax(0,1fr)]">
+    <div className="mx-auto max-w-5xl px-6 pt-8 pb-16 lg:pl-[88px]">
+      <div className="grid gap-6">
         <SectionNav label="Family sections" sections={sections} value={section} onChange={setSection} id="family-sections" />
         <div className="relative min-w-0">
           <Section active={section === "today"}>{todayCards}</Section>

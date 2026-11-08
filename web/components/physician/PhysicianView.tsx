@@ -89,8 +89,8 @@ export function PhysicianView() {
   const reportCards = useMemo(() => <ReportsCard range={range} today={today} />, [range, today]);
 
   return (
-    <div className="mx-auto grid max-w-[1600px] gap-6 px-6 pt-8 pb-16 lg:grid-cols-[56px_minmax(0,1fr)]">
-      <div className="flex flex-wrap items-end justify-between gap-4 lg:col-start-2">
+    <div className="mx-auto grid max-w-[1600px] gap-6 px-6 pt-8 pb-16 lg:pl-[88px]">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[2rem] font-semibold leading-tight tracking-display">Alex Chen</h1>
           <p className="text-[15px] text-muted">47, ALS. Right foot drop, adaptive AFO prototype.</p>

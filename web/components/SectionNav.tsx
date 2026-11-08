@@ -62,12 +62,12 @@ export function SectionNav<T extends string>({
   });
 
   return (
-    <nav aria-label={label} className="relative min-w-0 lg:sticky lg:top-20 lg:z-30 lg:self-start">
+    <nav aria-label={label} className="relative min-w-0 lg:contents">
       <ul className="flex max-w-full gap-1 overflow-x-auto rounded-3xl bg-surface p-1 lg:hidden">
         {items(false)}
       </ul>
       <motion.ul
-        className="absolute left-0 top-0 hidden flex-col gap-1 overflow-hidden rounded-3xl bg-surface p-1 shadow-card lg:flex"
+        className="fixed left-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-1 overflow-hidden rounded-3xl bg-surface p-1 shadow-card lg:flex"
         initial={false}
         animate={{ width: expanded ? 200 : 56 }}
         transition={reducedMotion ? { duration: 0 } : spring}
