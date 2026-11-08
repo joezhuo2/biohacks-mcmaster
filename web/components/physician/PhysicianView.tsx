@@ -1,13 +1,17 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useFetch } from "@/hooks/useFetch";
 import { DAY, useToday } from "@/hooks/useNow";
 import { paths } from "@/lib/api";
 import type { ClinicScore, DailyMetrics, HourCell } from "@/lib/types";
 import { SegmentedControl } from "../SegmentedControl";
+import { SectionNav } from "../SectionNav";
+import { Section } from "../Sections";
+import { CalendarIcon, ForecastIcon, OverviewIcon, ProgressionIcon, ReportsIcon } from "../SectionIcons";
 import { EngineCard } from "./EngineCard";
 import { EventsCard } from "./EventsCard";
+import { ForecastCard } from "./ForecastCard";
 import { Heatmap as HeatmapBase } from "./Heatmap";
 import { KpiRow } from "./KpiRow";
 import { LiveCard as LiveCardBase } from "./LiveCard";
@@ -20,6 +24,16 @@ const Heatmap = memo(HeatmapBase);
 const LiveCard = memo(LiveCardBase);
 const ProgressionCard = memo(ProgressionCardBase);
 
+type PhysicianSection = "forecast" | "overview" | "progression" | "patterns" | "reports";
+
+const sections: { id: PhysicianSection; label: string; icon: ReactNode }[] = [
+  { id: "forecast", label: "Forecast", icon: <ForecastIcon /> },
+  { id: "overview", label: "Overview", icon: <OverviewIcon /> },
+  { id: "progression", label: "Progression", icon: <ProgressionIcon /> },
+  { id: "patterns", label: "Patterns", icon: <CalendarIcon /> },
+  { id: "reports", label: "Reports", icon: <ReportsIcon /> },
+];
+
 const ranges: { value: Range; label: string }[] = [
   { value: 7, label: "7 days" },
   { value: 30, label: "30 days" },
@@ -27,6 +41,7 @@ const ranges: { value: Range; label: string }[] = [
 ];
 
 export function PhysicianView() {
+  const [section, setSection] = useState<PhysicianSection>("forecast");
   const today = useToday();
   const [range, setRange] = useState<Range>(30);
   const daily = useFetch<DailyMetrics[]>(paths.daily(180));
@@ -43,34 +58,52 @@ export function PhysicianView() {
     [setScores, reloadScores],
   );
 
+  const forecastCards = useMemo(() => <ForecastCard />, []);
+  const overviewCards = useMemo(() => (
+    <>
+      <KpiRow daily={daily.data} loading={daily.loading} today={today} range={range} />
+      <div className="grid gap-5 xl:grid-cols-2">
+        <LiveCard />
+        <EngineCard />
+      </div>
+    </>
+  ), [daily.data, daily.loading, today, range]);
+  const progressionCards = useMemo(() => (
+    <>
+      <ProgressionCard
+        daily={daily.data}
+        loading={daily.loading}
+        scores={scores.data}
+        scoresLoading={scores.loading}
+        onAdded={added}
+      />
+      <SimilarDaysCard />
+    </>
+  ), [daily.data, daily.loading, scores.data, scores.loading, added]);
+  const patternCards = useMemo(() => (
+    <>
+      <Heatmap cells={hourly.data} loading={hourly.loading} today={today} />
+      <EventsCard from={from} range={range} />
+    </>
+  ), [hourly.data, hourly.loading, today, from, range]);
+  const reportCards = useMemo(() => <ReportsCard range={range} today={today} />, [range, today]);
+
   return (
-    <div className="mx-auto max-w-[1600px] px-6 pt-8 pb-16">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto grid max-w-[1600px] gap-6 px-6 pt-8 pb-16 lg:grid-cols-[56px_minmax(0,1fr)]">
+      <div className="flex flex-wrap items-end justify-between gap-4 lg:col-start-2">
         <div>
           <h1 className="text-[2rem] font-semibold leading-tight tracking-display">Alex Chen</h1>
           <p className="text-[15px] text-muted">47, ALS. Right foot drop, adaptive AFO prototype.</p>
         </div>
         <SegmentedControl label="Range" options={ranges} value={range} onChange={setRange} size="sm" />
       </div>
-      <KpiRow daily={daily.data} loading={daily.loading} today={today} range={range} />
-      <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <div className="min-w-0 space-y-5">
-          <LiveCard />
-          <ProgressionCard
-            daily={daily.data}
-            loading={daily.loading}
-            scores={scores.data}
-            scoresLoading={scores.loading}
-            onAdded={added}
-          />
-          <SimilarDaysCard />
-        </div>
-        <div className="min-w-0 space-y-5">
-          <EngineCard />
-          <ReportsCard range={range} today={today} />
-          <Heatmap cells={hourly.data} loading={hourly.loading} today={today} />
-          <EventsCard from={from} range={range} />
-        </div>
+      <SectionNav label="Physician sections" sections={sections} value={section} onChange={setSection} id="physician-sections" />
+      <div className="relative min-w-0">
+        <Section active={section === "forecast"}>{forecastCards}</Section>
+        <Section active={section === "overview"}>{overviewCards}</Section>
+        <Section active={section === "progression"}>{progressionCards}</Section>
+        <Section active={section === "patterns"}>{patternCards}</Section>
+        <Section active={section === "reports"}>{reportCards}</Section>
       </div>
     </div>
   );
