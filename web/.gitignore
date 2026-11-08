@@ -21,6 +21,7 @@
 /build
 
 # misc
+/reports/
 .DS_Store
 *.pem
 

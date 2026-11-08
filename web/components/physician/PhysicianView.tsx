@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useFetch } from "@/hooks/useFetch";
+import { useReplay } from "@/hooks/useReplay";
 import { DAY, useToday } from "@/hooks/useNow";
 import { paths } from "@/lib/api";
 import type { ClinicScore, DailyMetrics, HourCell } from "@/lib/types";
@@ -41,6 +42,8 @@ const ranges: { value: Range; label: string }[] = [
 ];
 
 export function PhysicianView() {
+  const { root, replay } = useReplay();
+  const replayStart = replay?.running ? replay.start : null;
   const [section, setSection] = useState<PhysicianSection>("forecast");
   const today = useToday();
   const [range, setRange] = useState<Range>(30);
@@ -63,11 +66,11 @@ export function PhysicianView() {
     <>
       <KpiRow daily={daily.data} loading={daily.loading} today={today} range={range} />
       <div className="grid gap-5 xl:grid-cols-2">
-        <LiveCard />
+        <LiveCard replayStart={replayStart} />
         <EngineCard />
       </div>
     </>
-  ), [daily.data, daily.loading, today, range]);
+  ), [daily.data, daily.loading, today, range, replayStart]);
   const progressionCards = useMemo(() => (
     <>
       <ProgressionCard
@@ -82,14 +85,14 @@ export function PhysicianView() {
   ), [daily.data, daily.loading, scores.data, scores.loading, added]);
   const patternCards = useMemo(() => (
     <>
-      <Heatmap cells={hourly.data} loading={hourly.loading} today={today} />
+      <Heatmap cells={hourly.data} loading={hourly.loading} today={today} replay={replay} />
       <EventsCard from={from} range={range} />
     </>
-  ), [hourly.data, hourly.loading, today, from, range]);
+  ), [hourly.data, hourly.loading, today, from, range, replay]);
   const reportCards = useMemo(() => <ReportsCard range={range} today={today} />, [range, today]);
 
   return (
-    <div className="mx-auto grid max-w-[1600px] gap-6 px-6 pt-8 pb-16 lg:pl-[88px]">
+    <div ref={root} className="mx-auto grid max-w-[1600px] gap-6 px-6 pt-8 pb-16 lg:pl-[88px]">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[2rem] font-semibold leading-tight tracking-display">Alex Chen</h1>

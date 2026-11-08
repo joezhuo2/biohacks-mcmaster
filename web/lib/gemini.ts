@@ -1,4 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { publish } from './bus';
 import { getAnomalies, getBaseline, getClinicScores, getDaily, getHourly, getStairNearTrips, reportColumns } from './data';
 import { patientId, query } from './db';
@@ -37,6 +39,30 @@ Describe afternoon and evening patterns and distinguish sensor changes from dise
 Compare Alex's stride time variability with the healthy control and ALS cohort reference values from PhysioNet, citing the source once.`,
 };
 
+async function savedReports(audience: Audience): Promise<string[]> {
+  const dir = path.join(process.cwd(), 'reports');
+  try {
+    const files = await readdir(dir, { withFileTypes: true });
+    return files.filter(file => file.isFile() && file.name.startsWith(`${audience}-`) && file.name.endsWith('.md'))
+      .map(file => path.join(dir, file.name)).sort().reverse();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
+async function saveReport(audience: Audience, from: string, to: string, markdown: string) {
+  for (const file of await savedReports(audience)) {
+    if (await readFile(file, 'utf8') === markdown) return;
+  }
+  const createdAt = new Date().toISOString();
+  const dir = path.join(process.cwd(), 'reports');
+  const file = path.join(dir, `${audience}-${createdAt.replace(/[:.]/g, '-')}-${crypto.randomUUID()}`);
+  await mkdir(dir, { recursive: true });
+  await writeFile(`${file}.json`, JSON.stringify({ audience, from, to, createdAt }), 'utf8');
+  await writeFile(`${file}.md`, markdown, 'utf8');
+}
+
 export async function generateReport(audience: Audience, from: string, to: string): Promise<Report> {
   if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is required');
   const [dailyMetrics, hourlyCells, anomalyHours, stairNearTrips, clinicScores, baseline] = await Promise.all([
@@ -46,13 +72,28 @@ export async function generateReport(audience: Audience, from: string, to: strin
     `SELECT stddev_pop(stride_ms) / avg(stride_ms) AS "strideCv" FROM steps WHERE patient_id=$1 AND time >= $2 AND time < $3`, [patientId, from, to]);
   const strideVariability = { alexStrideCv: strideCv, healthyControlsStrideCv: controlStrideCv, alsCohortStrideCv: alsStrideCv, reference: physionet.source };
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, apiVersion: 'v1beta' });
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    config: { systemInstruction, temperature: 0.3, thinkingConfig: { thinkingBudget: 1024 } },
-    contents: `${reportPrompts[audience]}\n${JSON.stringify({ from, to, timezone: 'UTC', dailyMetrics, hourlyCells, anomalyHours, stairNearTrips,
-      clinicScores: clinicScores.filter(score => score.date <= to.slice(0, 10)), baseline, strideVariability })}`,
-  });
-  const markdown = response.text?.trim().replace(/\u2014/g, ',');
+  let response;
+  let markdown;
+  try {
+    response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      config: { systemInstruction, temperature: 0.3, thinkingConfig: { thinkingBudget: 1024 } },
+      contents: `${reportPrompts[audience]}\n${JSON.stringify({ from, to, timezone: 'UTC', dailyMetrics, hourlyCells, anomalyHours, stairNearTrips,
+        clinicScores: clinicScores.filter(score => score.date <= to.slice(0, 10)), baseline, strideVariability })}`,
+    });
+  } catch (error) {
+    if (!error || typeof error !== 'object') throw error;
+    const { status, code } = error as { status?: number | string; code?: number | string };
+    if (![status, code].some(value => value === 429 || value === '429' || value === 'RESOURCE_EXHAUSTED')) throw error;
+    const [file] = await savedReports(audience);
+    if (!file) throw error;
+    markdown = await readFile(file, 'utf8');
+    console.warn(`Gemini rate limit: using cached report for ${audience}`);
+  }
+  if (response) {
+    markdown = response.text?.trim().replace(/\u2014/g, ',');
+    if (markdown) await saveReport(audience, from, to, markdown);
+  }
   if (!markdown) throw new Error('Gemini returned an empty report');
   const [report] = await query<Report>(`INSERT INTO reports (id,patient_id,audience,range_start,range_end,markdown)
     VALUES ($1,$2,$3,$4,$5,$6) RETURNING ${reportColumns}`, [crypto.randomUUID(), patientId, audience, from, to, markdown]);
