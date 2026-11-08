@@ -1,0 +1,17 @@
+add a ~30s script for entire (using it for: 
+
+<pasted_content id="4088">
+Fix the stale Playwright e2e suite that broke when section navigation changed. It’s a real gap and touches several files, so Graph has something to trace.
+
+1. Set up Graph: `entire graph setup --repo .`, then commit the guide files
+2. Build Brain: `entire brain setup`, then `entire brain distill` (turns the imported sessions into memories)
+3. Open a Trail: `entire trail create --title "Fix e2e suite for section nav"`
+4. In a new Claude session, ask entire-graph what the nav change broke and run `entire brain brief` for context, then fix and commit. That commit gets the trailer.
+5. Push, then link the branch to the Trail on entire.com
+</pasted_content id="4088">
+
+)
+
+---
+
+what about the "entire in detail"
