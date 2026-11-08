@@ -64,7 +64,7 @@ Screenshots use seeded demo data and the PhysioNet replay.
 | [![Family Today](assets/screenshots/family-today.png)](assets/screenshots/family-today.png)<br>**Family Today** Brace status and today's care timeline. | [![Family Week](assets/screenshots/family-week.png)](assets/screenshots/family-week.png)<br>**Family Week** Weekly stability and the latest family summary. |
 | [![Physician Overview](assets/screenshots/physician-overview.png)](assets/screenshots/physician-overview.png)<br>**Physician Overview** Live PhysioNet foot-force trace and period metrics. | [![Physician Patterns](assets/screenshots/physician-patterns.png)](assets/screenshots/physician-patterns.png)<br>**Physician Patterns** Filled replay heatmap with a cell's hover details. |
 | [![Physician Forecast](assets/screenshots/physician-forecast.png)](assets/screenshots/physician-forecast.png)<br>**Physician Forecast** Gait projections and uncertainty bands. | [![Physician Progression](assets/screenshots/physician-progression.png)](assets/screenshots/physician-progression.png)<br>**Physician Progression** Longitudinal gait trends and clinic visits. |
-| [![Physician Reports](assets/screenshots/physician-reports.png)](assets/screenshots/physician-reports.png)<br>**Physician Reports** Physician report history and summaries. | |
+| [![Physician Reports](assets/screenshots/physician-reports.png)](assets/screenshots/physician-reports.png)<br>**Physician Reports** Physician report history and summaries. | [![Gemini Report](assets/screenshots/gemini-report.png)] |
 
 ## Data
 
