@@ -1,4 +1,4 @@
-<h1 align="center">AFO Care</h1>
+<h1 align="center">Elevait</h1>
 
 <p align="center">BioHacks McMaster 2026</p>
 
