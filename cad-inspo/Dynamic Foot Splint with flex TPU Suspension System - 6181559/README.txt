@@ -1,0 +1,4 @@
+Dynamic Foot Splint with flex TPU Suspension System by PTAREHAB on Thingiverse: https://www.thingiverse.com/thing:6181559
+
+Summary:
+The Corrective hinged Resting Foot insole splint  RF1 of the PTA ECORTHOTICS Orthopedic Splint series is indicated for diseases and injuries of the nervous system and neurons that have as a pathological symptom the loose paralysis (hippopodia) (drop foot). The presence of ridges and protrusions-dampers optimize the correct neurophysiological feedback of the muscles of the sole and support the foot arch, resulting in the loads being distributed equally throughout the sole in all phases of walking. Before you print please measure your body member as the pictures above and scale the model of the splint accordingly.After the 3D Printing process and for final result please thermoform it !For more instructions see at the "post printing" section.
