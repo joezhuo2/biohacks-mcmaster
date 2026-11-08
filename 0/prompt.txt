@@ -1,0 +1,1 @@
+how can we build a ML machine to predict whether he is moving up stairs, to differentiate normal walking steps vs going up stairs
