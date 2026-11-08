@@ -1,0 +1,8 @@
+the colors should be:
+
+* Primary (Dominant / 60%): Warm cream or soft ecru (`#FDFBF7`)
+* Secondary (30%): Muted sage green or soft lilac
+* Accent (10%): Warm peach, coral, or deep forest green for primary actions [[1](https://www.youtube.com/shorts/7Tj9d4_FjmQ), [2](https://www.figma.com/resource-library/types-of-color-palettes/)]
+
+
+where it currently has a very dark background
