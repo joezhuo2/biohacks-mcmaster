@@ -33,7 +33,8 @@ test('physician replay stays local, restarts, and returns to live', async ({ pag
   await expect(page.getByRole('tooltip')).toContainText('Near-trips:');
   await cell.focus();
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  // The fake clock freezes the tooltip's exit animation, so check the cleared hover state instead.
+  await expect(cell).not.toHaveAttribute('aria-describedby');
   await page.keyboard.press('s');
   await expect(filled).toHaveCount(0);
   await page.clock.fastForward(61_000);

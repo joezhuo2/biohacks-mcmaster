@@ -196,7 +196,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Playwright expects an already-running app at `http://localhost:3000`; it does not start the server. Use a seeded test database and a running simulator for live-trace coverage. The suite posts near-trip events to the database. Its cases cover view switching, live-trace motion, range controls, event filters, visit form expansion, report sheets, check-in alerts and reduced motion. Several cases currently target controls without first selecting their section in the newer navigation, so the suite needs selector/navigation updates before it can be treated as a passing regression check.
+Playwright expects an already-running app at `http://localhost:3000`; it does not start the server. Use a seeded test database and a running simulator for live-trace coverage. The suite posts near-trip events to the database. Its cases cover view switching, live-trace motion, range controls, event filters, visit form expansion, report sheets, check-in alerts, reduced motion and the local PhysioNet replay. Each case opens the section that holds its controls first, and the suite passes as a regression check.
 
 ### Layout
 
