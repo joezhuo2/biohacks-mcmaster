@@ -3,6 +3,7 @@ import { db, patientId } from './db';
 import { live, publish, publishSamples } from './bus';
 import { choice, HttpError, number, object, text, timestamp } from './http';
 import { getStatus } from './data';
+import { recordIngest } from './engine';
 import type { CareEvent, IngestBody, Sample, Step } from './types';
 
 export const terrains = ['level', 'stairs_up', 'stairs_down'] as const;
@@ -58,6 +59,7 @@ export async function ingest(input: IngestBody, source: 'pi' | 'sim' = 'pi') {
     await client.query('ROLLBACK');
     throw error;
   } finally { client.release(); }
+  recordIngest(input.samples.length + steps.length + events.length);
   for (const step of steps) publish({ kind: 'step', data: step });
   for (const event of events) publish({ kind: 'event', data: event });
   live.status = await getStatus();

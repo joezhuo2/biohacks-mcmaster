@@ -72,3 +72,19 @@ ALTER TABLE steps ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pi';
 ALTER TABLE events ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pi';
 ALTER TABLE clinic_scores ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pi';
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pi';
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit;
+CREATE MATERIALIZED VIEW IF NOT EXISTS clearance_1d
+WITH (timescaledb.continuous, timescaledb.materialized_only = false) AS
+SELECT time_bucket(INTERVAL '1 day', time) AS bucket, patient_id, percentile_agg(min_clearance_mm) AS pct
+FROM steps GROUP BY bucket, patient_id WITH NO DATA;
+SELECT add_continuous_aggregate_policy('clearance_1d', start_offset => INTERVAL '7 days', end_offset => INTERVAL '1 day', schedule_interval => INTERVAL '1 hour', if_not_exists => TRUE);
+
+CREATE EXTENSION IF NOT EXISTS vectorscale CASCADE;
+CREATE TABLE IF NOT EXISTS gait_days (
+  patient_id text NOT NULL, day date NOT NULL, embedding vector(4) NOT NULL,
+  clearance_mm double precision NOT NULL, dorsi_deg double precision NOT NULL,
+  stride_ms double precision NOT NULL, stride_cv double precision NOT NULL, assist_pct double precision NOT NULL,
+  PRIMARY KEY (patient_id, day)
+);
+CREATE INDEX IF NOT EXISTS gait_days_embedding ON gait_days USING diskann (embedding vector_l2_ops);

@@ -10,6 +10,7 @@ async function rightStrides(file: string) {
     .filter(ms => ms >= 600 && ms <= 2500);
 }
 
+const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const cv = (xs: number[]) => {
   const mean = xs.reduce((a, b) => a + b, 0) / xs.length;
   return Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / xs.length) / mean;
@@ -23,6 +24,8 @@ async function main() {
   const out = {
     source: 'PhysioNet Gait in Neurodegenerative Disease Database v1.0.0 (Hausdorff et al.), right-foot stride intervals',
     alsStrideCv: median(als.map(cv)),
+    alsStrideMs: median(als.map(mean)),
+    controlStrideMs: median(control.map(mean)),
     controlStrideCv: median(control.map(cv)),
     als,
   };

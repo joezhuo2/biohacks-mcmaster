@@ -61,11 +61,10 @@ export async function getBaseline() {
 export async function getDaily(from: string, to: string): Promise<DailyMetrics[]> {
   const [rows, baseline] = await Promise.all([
     query<DailyMetrics & { strideMean: number; strideStddev: number; stairNearTrips: number }>(`
-      WITH gait AS (SELECT time_bucket('1 day',time) AS bucket, count(*)::int AS steps,
-        count(*) FILTER (WHERE terrain <> 'level')::int AS stair_steps,
-        avg(min_clearance_mm) AS clearance, avg(peak_dorsi_deg) AS dorsi, avg(assist_pct) AS assist,
-        avg(stride_ms) AS stride_mean, stddev_pop(stride_ms) AS stride_stddev
-        FROM steps WHERE patient_id=$1 AND time >= $2 AND time < $3 GROUP BY bucket),
+      WITH gait AS (SELECT bucket, steps::int, (stairs_up + stairs_down)::int AS stair_steps,
+        avg_clearance_mm AS clearance, avg_peak_dorsi_deg AS dorsi, avg_assist_pct AS assist,
+        avg_stride_ms AS stride_mean, stride_stddev
+        FROM steps_1d WHERE patient_id=$1 AND bucket >= $2 AND bucket < $3),
       incidents AS (SELECT time_bucket('1 day',time) AS bucket,
         count(*) FILTER (WHERE type='near_trip')::int AS near_trips,
         count(*) FILTER (WHERE type='fall')::int AS falls,

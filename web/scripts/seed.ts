@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { db, patientId } from '../lib/db';
 import { clearDemo } from '../lib/demo';
+import { refreshRollups } from '../lib/engine';
 import { syntheticStep } from '../lib/synthetic';
 import type { Audience, CareEvent, Step, Terrain } from '../lib/types';
 
@@ -111,8 +112,7 @@ The adaptive AFO is a prototype, not a proven ALS treatment. Demo placeholder, n
     await client.query('ROLLBACK');
     throw error;
   } finally { client.release(); }
-  await db().query("CALL refresh_continuous_aggregate('steps_1h', NULL, NULL)");
-  await db().query("CALL refresh_continuous_aggregate('steps_1d', NULL, NULL)");
+  await refreshRollups();
   console.log('Seeded 90 days, three clinic visits, and two placeholder reports.');
 }
 

@@ -1,14 +1,18 @@
 "use client";
 
 import { useMemo } from "react";
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { ClinicScore, DailyMetrics } from "@/lib/types";
+import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useFetch } from "@/hooks/useFetch";
+import { paths } from "@/lib/api";
+import type { ClearanceSeries, ClinicScore, DailyMetrics } from "@/lib/types";
 import { Card, Empty, Skeleton } from "../Card";
 import { axis, tooltip, useChartAnimation } from "../charts";
 import { dayMs, fmtDay } from "../format";
 import { ClinicScores } from "./ClinicScores";
 
 type Point = { t: number; stability: number; clearance: number; dorsi: number; assist: number };
+type Band = { t: number; band: [number, number]; median: number };
+type Trace = { t: number; v: number };
 
 const series: { key: keyof Omit<Point, "t">; label: string; unit: string; digits: number }[] = [
   { key: "stability", label: "Stability score", unit: "", digits: 0 },
@@ -22,18 +26,24 @@ function Trend({
   s,
   visits,
   domain,
+  clearance,
 }: {
   data: Point[];
   s: (typeof series)[number];
   visits: number[];
   domain: [number, number];
+  clearance?: { band: Band[]; trace: Trace[] };
 }) {
   const animate = useChartAnimation();
-  const last = data.at(-1)?.[s.key];
+  const banded = s.key === "clearance" && !!clearance?.band.length;
+  const last = banded ? clearance!.band.at(-1)!.median : data.at(-1)?.[s.key];
   return (
     <div className="min-w-0">
       <div className="flex items-baseline justify-between text-[13px]">
-        <span className="text-muted">{s.label}</span>
+        <span className="text-muted">
+          {s.label}
+          {banded && <span className="text-faint"> · p10–p90 band, hourly LTTB trace</span>}
+        </span>
         {last !== undefined && (
           <span className="font-medium tabular">
             {last.toFixed(s.digits)}
@@ -43,7 +53,7 @@ function Trend({
       </div>
       <div className="mt-1 h-28">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 6, right: 4, bottom: 0, left: -22 }}>
+          <ComposedChart data={data} margin={{ top: 6, right: 4, bottom: 0, left: -12 }}>
             <CartesianGrid vertical={false} stroke="var(--line)" />
             <XAxis
               dataKey="t"
@@ -54,17 +64,42 @@ function Trend({
               minTickGap={40}
               {...axis}
             />
-            <YAxis domain={["auto", "auto"]} tickCount={3} width={44} {...axis} />
-            <Tooltip
-              {...tooltip}
-              labelFormatter={(t) => fmtDay(Number(t))}
-              formatter={(v) => [`${Number(v).toFixed(s.digits)}${s.unit}`, s.label]}
-            />
+            <YAxis domain={["auto", "auto"]} tickCount={3} width={44} tickFormatter={(v: number) => v.toFixed(Math.min(1, s.digits))} {...axis} />
+            {!banded && (
+              <Tooltip
+                {...tooltip}
+                labelFormatter={(t) => fmtDay(Number(t))}
+                formatter={(v) => [`${Number(v).toFixed(s.digits)}${s.unit}`, s.label]}
+              />
+            )}
             {visits.map((v) => (
               <ReferenceLine key={v} x={v} stroke="var(--accent)" strokeDasharray="3 3" strokeOpacity={0.7} />
             ))}
+            {banded && (
+              <>
+                <Area
+                  data={clearance!.band}
+                  dataKey="band"
+                  stroke="none"
+                  fill="var(--accent)"
+                  fillOpacity={0.14}
+                  isAnimationActive={false}
+                />
+                <Line
+                  data={clearance!.trace}
+                  dataKey="v"
+                  stroke="var(--fg)"
+                  strokeOpacity={0.2}
+                  strokeWidth={1}
+                  dot={false}
+                  activeDot={false}
+                  isAnimationActive={false}
+                />
+              </>
+            )}
             <Line
-              dataKey={s.key}
+              {...(banded ? { data: clearance!.band } : {})}
+              dataKey={banded ? "median" : s.key}
               type="monotone"
               stroke="var(--fg)"
               strokeOpacity={0.8}
@@ -74,7 +109,7 @@ function Trend({
               isAnimationActive={animate}
               animationDuration={600}
             />
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>
@@ -109,6 +144,15 @@ export function ProgressionCard({
         .slice(-90),
     [daily],
   );
+  const raw = useFetch<ClearanceSeries>(paths.clearance(90));
+  const clearance = useMemo(
+    () =>
+      raw.data && {
+        band: raw.data.band.map((b) => ({ t: dayMs(b.day), band: [b.p10 / 10, b.p90 / 10] as [number, number], median: b.p50 / 10 })),
+        trace: raw.data.trace.map((p) => ({ t: Date.parse(p.t), v: p.v / 10 })),
+      },
+    [raw.data],
+  );
   const domain: [number, number] = data.length ? [data[0].t, data[data.length - 1].t] : [0, 1];
   const visits = (scores ?? []).map((s) => dayMs(s.date)).filter((t) => t >= domain[0] && t <= domain[1]);
 
@@ -127,7 +171,7 @@ export function ProgressionCard({
       ) : data.length ? (
         <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
           {series.map((s) => (
-            <Trend key={s.key} data={data} s={s} visits={visits} domain={domain} />
+            <Trend key={s.key} data={data} s={s} visits={visits} domain={domain} clearance={clearance} />
           ))}
         </div>
       ) : (

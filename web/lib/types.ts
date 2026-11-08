@@ -91,3 +91,35 @@ export type WsMessage =
   | { kind: 'event'; data: CareEvent }
   | { kind: 'status'; data: Status }
   | { kind: 'report'; data: Report };
+
+export interface EngineStats {
+  ingestRowsPerSec: number;
+  rawMs: number;
+  rollupMs: number;
+  benchRows: number;
+  compressionRatio: number | null;
+  compressedBytes: number | null;
+  uncompressedBytes: number | null;
+  chunks: number;
+  compressedChunks: number;
+}
+
+export interface ClearanceSeries {
+  trace: { t: string; v: number }[];
+  band: { day: string; p10: number; p50: number; p90: number }[];
+}
+
+export interface GaitDay {
+  day: string;
+  clearanceMm: number;
+  dorsiDeg: number;
+  strideMs: number;
+  strideCv: number;
+  assistPct: number;
+}
+
+export interface SimilarDays {
+  today: GaitDay | null;
+  matches: (GaitDay & { distance: number })[];
+  alsProgress: { overall: number; stride: number; rhythm: number } | null;
+}

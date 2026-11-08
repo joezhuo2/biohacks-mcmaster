@@ -6,6 +6,7 @@ import { DAY, useToday } from "@/hooks/useNow";
 import { paths } from "@/lib/api";
 import type { ClinicScore, DailyMetrics, HourCell } from "@/lib/types";
 import { SegmentedControl } from "../SegmentedControl";
+import { EngineCard } from "./EngineCard";
 import { EventsCard } from "./EventsCard";
 import { Heatmap as HeatmapBase } from "./Heatmap";
 import { KpiRow } from "./KpiRow";
@@ -13,6 +14,7 @@ import { LiveCard as LiveCardBase } from "./LiveCard";
 import type { Range } from "./metrics";
 import { ProgressionCard as ProgressionCardBase } from "./ProgressionCard";
 import { ReportsCard } from "./ReportsCard";
+import { SimilarDaysCard } from "./SimilarDaysCard";
 
 const Heatmap = memo(HeatmapBase);
 const LiveCard = memo(LiveCardBase);
@@ -61,8 +63,10 @@ export function PhysicianView() {
             scoresLoading={scores.loading}
             onAdded={added}
           />
+          <SimilarDaysCard />
         </div>
         <div className="min-w-0 space-y-5">
+          <EngineCard />
           <ReportsCard range={range} today={today} />
           <Heatmap cells={hourly.data} loading={hourly.loading} today={today} />
           <EventsCard from={from} range={range} />
