@@ -68,13 +68,13 @@ Each criterion has four levels. Judges score each project and name their top thr
 
 ## Design implications for our project
 
-- Goal we center on: staying in a classroom in June 2027. Target moments are walking around the room (between desks and the board) and standing at the board, both of which get harder as weakness and fatigue build through the afternoon.
-- Intent: counteract the gait and balance problem rather than cure it, so Alex can keep walking and standing while teaching with a much lower fall risk.
-- His falls come from motor weakness (right foot drop, fatigue) with normal sensory conduction, not a sensory or vestibular deficit. Tactile cues alone are weakly grounded for ALS, which is why the concept pairs cues with active correction.
-- Active correction precedent: TU Delft's GyBAR, a backpack-like control moment gyroscope that applies corrective moments to the trunk (Lemus et al., Scientific Reports 2020, DOI 10.1038/s41598-020-66760-w). Tested on healthy and chronic stroke participants, not ALS, so present it as a promising direction, not proven for Alex.
-- Risk is time-dependent: weakness and speech worsen through the afternoon, and both falls were after 6 PM, on stairs or at dusk. Time-of-day trends belong in the data and the reports.
-- Form factor stays a backpack. Keep it as light as possible and put no pressure on the chest, given his weight loss (86 to 77.5 kg) and reduced FVC (76% sitting, 61% supine). Closures and controls must not need fine finger control (no small buttons, zips or clasps).
-- He resists visible assistive devices and classroom accommodations. The device should look like a normal backpack and stay discreet in front of students, and the pitch should show we designed around what he wants.
-- The ALS clinic sees him every three months. Continuous between-visit data (sway, gait changes, time-of-day patterns) summarized for the physio and neurologist is the clinical value of the Gemini reports.
-- ElevenLabs is for spoken cues only. Voice banking is a stated reluctance, so never clone his voice or frame the audio as voice banking.
-- Relevant dataset: Gait in Neurodegenerative Disease (PhysioNet), foot-force and stride data including ALS, open download. Could inform thresholds or the stretch sway classifier.
+- Goal we center on: staying in a classroom in June 2027, with no more falls on the stairs at home. Target moments are walking between desks and the board late in the school day and the 14 stairs at home in the evening.
+- Intent: counteract right foot drop rather than cure it, so the toe clears the floor and the stair edge on every step, even as fatigue builds.
+- His falls come from motor weakness (right foot drop, fatigue) with normal sensory conduction, not a sensory or vestibular deficit. A brace that mechanically lifts the foot addresses the actual cause; cues alone would not.
+- He already wears a passive right AFO at school but not at home. An adaptive brace builds on a device he accepts, and making it comfortable enough to wear at home is where it matters most, since both falls happened there.
+- Risk is time-dependent: weakness worsens through the afternoon, and both falls were after 6 PM, on stairs or at dusk. The brace raises assist as toe clearance drops, and time-of-day trends belong in the data and the reports.
+- Evidence: AFOs are standard care for foot drop. Adaptive, sensor-driven assist is a prototype and not a proven ALS treatment, so present it as a promising direction.
+- Keep it light and low-profile so it fits under trousers and inside a normal shoe. Straps and the on/off control must not need fine finger control (no small buttons, buckles or laces), given his grip and morning help with buttons and shoelaces.
+- He resists visible assistive devices and classroom accommodations. The brace stays hidden under clothing, and the pitch should show we designed around what he wants.
+- The ALS clinic sees him every three months. Continuous between-visit data (toe clearance, ankle lift, assist needed, stride variability, time-of-day patterns) summarized for his physiotherapist and neurologist is the clinical value of the Gemini reports. Family sees a calm weekly summary and a near-trip alert, which serves his goal of being reachable while alone in the afternoons.
+- Relevant dataset: Gait in Neurodegenerative Disease (PhysioNet), stride data including ALS and controls. It calibrates how far his stride time and variability sit between control and ALS reference values.
