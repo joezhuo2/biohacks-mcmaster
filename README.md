@@ -3,7 +3,7 @@
 <p align="center">BioHacks McMaster 2026</p>
 
 <p align="center">
-  <img src="assets/live-replay.gif" alt="Live foot-force replay from the PhysioNet ALS record" width="100%">
+  <img src="assets/live-replay.gif" alt="Live foot-force replay from the PhysioNet ALS record" width="60%">
 </p>
 
 <p align="center">
