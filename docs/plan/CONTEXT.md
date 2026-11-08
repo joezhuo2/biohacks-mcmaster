@@ -1,6 +1,6 @@
-# BioHacks McMaster 2026: Haptic Core Stability Backpack
+# BioHacks McMaster 2026: Adaptive Ankle-Foot Brace
 
-A wearable backpack for Alex Chen (47, ALS) that counteracts his gait and balance problems so he can keep teaching: it senses trunk tilt and sway, taps his torso and speaks cues through a phone app when fatigue or foot-drop sway is detected, and streams data to a clinician dashboard with AI-generated reports. A tabletop gyroscope rig demonstrates the active-correction version. See `PATIENT_CASE.md` for the patient case (Alex Chen, ALS) and design implications, and `plan/` for the working plan. Links are at the bottom of this file.
+An adaptive ankle-foot orthosis (AFO) for Alex Chen (47, ALS) that targets his right foot drop so he can keep teaching and stop falling on the stairs. The brace senses ankle angle, toe clearance and gait events, detects stair climbing, and raises its lift assist as fatigue lowers his toe clearance through the afternoon. A Raspberry Pi reads the sensors and streams data to a Next.js backend on Tiger Data, and a care dashboard shows it to his family and his physician, with Gemini-generated summaries and physiotherapy suggestions. See `PATIENT_CASE.md` for the patient case and design implications, and `docs/superpowers/specs/2026-11-07-dashboard-design.md` for the dashboard and backend design. Links are at the bottom of this file.
 
 ## Event facts
 
@@ -26,37 +26,32 @@ Each team competes in exactly one track. Sponsor prizes are opted into at submis
 
 ## Locked decisions
 
-- Pitch goal: staying in a classroom in June 2027. Target moments: walking around the room and standing at the board, with late-day fatigue in mind.
-- Mechanism is hybrid. (1) Working wearable: cues timed to the gait cycle plus spoken cues when fatigue or foot-drop sway is detected. (2) Tabletop gyroscope rig: a spinning flywheel on a servo gimbal that physically resists a tipping dummy torso, showing the active-correction version, based on TU Delft's GyBAR (see `PATIENT_CASE.md`).
-- Form factor stays a backpack: as light as possible, no chest pressure, closures usable without fine finger control.
-- Haptics are servo tappers, not vibration motors. The MLH hardware lab has no vibration motors or haptic drivers. Servo split: 2 Grove Servos as left/right tappers, 1 as the rig's gimbal, 1 spare. The Grove Buzzer is a piezo and cannot vibrate against the body.
-- Gyro rig flywheel: hobby DC motor through the Grove Motor/Servo Driver Board (no ESC needed). Weaker than brushless, so use a heavy metal disk and tune the demo for a visible effect.
-- No moving weights. Shifting a small mass barely moves the center of mass, adds mechanical risk, and could destabilize the wearer.
-- Raspberry Pi 4B is the brain. The lab Arduino model is unknown and a plain Uno has no wireless. The Pi has WiFi and BLE built in, reads the Grove 3-axis accelerometer over I2C, drives the servos (directly or via the Grove Motor/Servo Driver Board), and runs from a USB-C power bank.
-- The accelerometer has no gyro, so tilt comes from the low-pass filtered gravity vector. Expect noise while walking; tune filtering and thresholds early.
-- Data path: Pi POSTs readings and events to Next.js over WiFi. Next.js runs with a custom server and a `ws` WebSocket server on a Vultr VM, writes to Tiger Data, and pushes events to the phone app. Vercel was rejected because its serverless functions do not hold persistent WebSockets.
-- Phone app: Expo (React Native) on iOS, running in Expo Go. It connects to the backend WebSocket and plays ElevenLabs spoken cues (for example, slow down or lift the right foot). Never clone Alex's voice; voice banking is one of his stated reluctances. BLE was dropped because BLE libraries need a custom dev build (Xcode or EAS plus Apple signing), and the Pi has WiFi anyway.
-- Gemini clinician reports: generated automatically after each session and on demand from the dashboard over a chosen time range. Gemini summarizes and reasons over stored data; it does not train the tilt model.
-- Tiger Data (TimescaleDB): all four ideas, with focus on (1) high-frequency IMU ingestion into a hypertable with continuous aggregates per minute/hour/day and (3) anomaly-window queries that flag unusual sway and feed Gemini. Also (2) long-term progress tracking with compression and (4) a multi-patient clinician view.
-- Vultr: level 1 is the VM hosting the real-time pipeline, with live tilt-to-voice latency shown on the dashboard. Stretch: train a small sway classifier on a Vultr GPU instance from labeled data (stable, swaying, near-fall) and serve it from the VM.
-- Bambu Lab prints: ergonomic Pi/electronics enclosure against the spine, clip-on servo tapper pods for adjustable placement, a rigid accelerometer mount at the lower back, and the gyro rig's flywheel housing and gimbal frame. Ask an organizer to print.
+- Pitch goal: staying in a classroom in June 2027 and not falling on the stairs at home. Target moments: walking between desks and the board late in the school day, and the 14 stairs at home after 6 PM, when both of his falls happened.
+- Device: an adaptive AFO on his right leg. It replaces the earlier haptic backpack and gyroscope rig concepts. He already wears a passive right AFO at school but not at home, so the brace builds on a device he accepts instead of adding a new visible one.
+- Adaptation: lift assist rises automatically with fatigue, when toe clearance drops. Clearance target is 2 cm; 1.2 cm is the risk threshold used by the forecast.
+- Sensing: ankle angle (dorsiflexion positive), toe clearance per swing, gait events (toe-off, cadence, stride time), terrain (level, stairs up, stairs down), assist level, and on/off wear status. The Pi samples at about 100 Hz; the dashboard live stream is throttled to 20 Hz.
+- Raspberry Pi 4B is the brain. It has WiFi built in, reads the Grove 3-axis accelerometer over I2C, drives the assist servo (directly or via the Grove Motor/Servo Driver Board), and runs from a USB-C power bank. The accelerometer has no gyro, so angles come from the filtered gravity vector and need tuning while walking.
+- Data path: the Pi POSTs samples, steps and events to `/api/ingest` on a Next.js app with a custom Node server and a `ws` WebSocket server at `/ws`. Hosting target is a Vultr VM, since Vercel serverless functions do not hold persistent WebSockets. A simulator (`web/scripts/simulate.ts`) posts like the Pi and seeded history (`web/scripts/seed.ts`) covers 90 days, so the whole system demos without hardware.
+- Dashboard: one Next.js app with two modes. Family mode is calm and plain (today strip, weekly stability, weekly summary, a near-trip banner with a soft chime). Physician mode has a live ankle trace, KPIs, progression with clinic visits, an hour-by-day clearance heatmap, events, similar days, a 90-day forecast and Gemini reports.
+- Tiger Data (TimescaleDB): hypertables for samples and steps, continuous aggregates per hour and day, compression and retention policies, an anomaly query (hours below the 30-day mean minus 2 standard deviations, plus stair near-trips), toolkit percentiles for daily clearance, pgvector nearest-neighbour search for similar gait days, and a 90-day forecast fitted on the daily rollup. The engine card shows raw versus rollup query time.
+- PhysioNet Gait in Neurodegenerative Disease database: ALS and control stride time and stride variability calibrate how far Alex's gait sits between healthy and ALS reference values.
+- Gemini reports: a plain weekly summary for family (automatic every Monday) and an on-demand physician report over a chosen range with stability findings, progression versus baseline, suggested physiotherapy focus and questions for the next visit. Input is aggregates and anomalies, never raw samples. Reports are labelled as AI-generated suggestions for his physiotherapist, not medical advice.
+- Bambu Lab prints: the brace shell and assist mechanism mounts, the Pi and battery enclosure, and a rigid sensor mount on the shank. Ask an organizer to print.
 - Team: 4 people, one owner per area.
 
 ## MLH hardware lab (relevant parts)
 
-Raspberry Pi 4B kits (9), Arduinos of unspecified model with Base Shields (12), Grove 3 Axis Digital Accelerometer (10), Grove Servo (4), Grove Motor/Servo Driver Board (5), Grove Buzzer (10), JBL Go 3 (2), Grove cables, jumpers, breadboards, resistors, capacitors, multimeter. No ESP32, gyro, vibration motors, haptic drivers or batteries are listed. Full list: https://guide.mlh.com/organizer-resources/hardware-lab-contents
+Raspberry Pi 4B kits (9), Arduinos of unspecified model with Base Shields (12), Grove 3 Axis Digital Accelerometer (10), Grove Servo (4), Grove Motor/Servo Driver Board (5), Grove Buzzer (10), Grove cables, jumpers, breadboards, resistors, capacitors, multimeter. No ESP32, gyro or batteries are listed. Full list: https://guide.mlh.com/organizer-resources/hardware-lab-contents
 
 ## Open questions
 
-- Exact Arduino model. If it is an UNO R4 WiFi, Nano 33 BLE or Nano ESP32 it has wireless. Either way it could run the gyro rig on its own (accelerometer, DC flywheel motor, gimbal servo) so the rig is independent of the wearable.
-- Source of the hobby DC motor for the flywheel. The lab lists brushless, stepper and servo motors but no plain DC motor.
-- Domain name for GoDaddy Registry is not chosen.
-- Owner assignment for the 4 areas (hardware/firmware, backend/data, app/audio, dashboard/CAD) is not set.
-- Servo count: the lab lists 4 Grove Servos total and we need 3. Reserve them at the hardware table.
+- How toe clearance is measured on the physical brace (estimated from ankle angle and stride, or a distance sensor), and how the assist servo couples to the foot plate.
+- Whether the ElevenLabs and GoDaddy prizes are still in scope; the current build does not use ElevenLabs and no domain is chosen.
+- Vultr deployment status of the custom server.
 
 ## Working rules
 
-- Do not commit or push unless explicitly told to.
+- Commit and push directly to main in this repo.
 - Never use em dashes in code or text.
 - Expo judging is in MCCD 7110 and 7120. Ask an organizer to 3D print parts.
 - Ask for clarification and design decisions before starting tasks whenever anything is ambiguous; do not assume.
