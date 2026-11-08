@@ -1,0 +1,1 @@
+update the readme, follow format of https://github.com/joezhuo2/tickr, and make a PITCH.md file for the 3 min pitch
