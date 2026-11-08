@@ -1,0 +1,1 @@
+the icons should be black color (they are currently white, so not visible)
