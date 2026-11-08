@@ -1,0 +1,67 @@
+Base directory for this skill: C:\Users\Joe\.claude\skills\codex-delegate
+
+# codex-delegate
+
+Offload bounded work to Codex. Claude stays orchestrator and reviewer.
+
+## When to delegate
+
+Delegate when ALL hold:
+- Spec fits in one self-contained prompt (no need for this chat's history).
+- Touches roughly 1-5 files.
+- Verifiable by a command (tests, build, lint) or by reading the diff.
+- Not security-sensitive, not architecture, not a subtle/concurrency bug.
+
+Good fits: test suites, boilerplate, docs/README, mechanical refactors, small features with clear spec, second-opinion review, codebase Q&A.
+Keep in Claude: design decisions, ambiguous requirements, cross-repo changes, debugging that needs iteration.
+
+## Gate (automatic)
+
+`codex-run.ps1` runs `codex-gate.ps1` first. It blocks (exit 3, `GATE_BLOCKED: <why>`) unless the Codex login is on the **plus** plan and neither the 5h nor weekly window is >= 95% used (read from the newest `~/.codex/sessions` rate_limits entry; a window past its reset counts as 0%). On block: do the task yourself or with a normal subagent. Do not retry in a loop. Check without running: `& "<skill dir>\codex-gate.ps1"`.
+
+## Model choice (Claude decides, always medium effort)
+
+- `gpt-6.1-sol` (default): routine work: tests, boilerplate, docs, mechanical refactors, small clear features, reviews.
+- `gpt-6-astra`: harder medium work: several interacting files, some ambiguity, tricky logic. Costs more usage; if the task needs more than this, keep it in Claude.
+
+Pass with `-Model gpt-6-astra`.
+
+## How
+
+Run the wrapper (PowerShell). The scripts sit next to this SKILL.md; use this skill's base directory as `<skill dir>`:
+
+```powershell
+& "<skill dir>\codex-run.ps1" -Prompt "<task>" -Cwd "<project dir>" [-Write] [-Model gpt-6.1-sol|gpt-6-astra] [-TimeoutSec 600]
+```
+
+- Default is read-only sandbox (review, research, analysis).
+- `-Write` = `workspace-write` sandbox: Codex may edit files inside `-Cwd` only.
+- Long jobs: run with `run_in_background` and wait for the notification.
+- Output = Codex's final message. On failure prints `CODEX_FAILED` / `CODEX_TIMEOUT` plus stderr tail.
+
+## Prompt template
+
+Codex has no access to this conversation. Include:
+1. Goal (one sentence).
+2. Exact files/dirs in scope, and what NOT to touch.
+3. Conventions to follow (point at an example file).
+4. Done criteria + verify command (e.g. `npm test`).
+5. "Do not commit. Report changed files and anything unverified."
+
+## After Codex returns (mandatory)
+
+1. `git diff` / `git status` in the project. Read the diff.
+2. Re-run the verify command yourself. Do not trust Codex's "tests pass."
+3. Fix small issues directly; for big misses, re-delegate with sharper prompt or take over.
+4. Tell the user what Codex did and what you verified.
+
+## Rules
+
+- Never delegate with secrets in the prompt.
+- Never pass `--dangerously-bypass-approvals-and-sandbox`; wrapper never uses it.
+- Codex edits are uncommitted; Claude owns commits.
+- One Codex job per file set at a time; no parallel writers on same files.
+- If `codex.exe` missing: `~/.codex/.sandbox-bin/codex.exe` ships with the Codex desktop app; reinstall the app.
+
+
+ARGUMENTS: Rewrite README.md for biohacks-mcmaster following tickr README format
