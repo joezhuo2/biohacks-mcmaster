@@ -26,7 +26,7 @@
 </p>
 
 > Elevait is a care dashboard and backend for an adaptive ankle-foot orthosis (AFO), built for BioHacks McMaster 2026. It follows Alex Chen, the event's fictional patient: a 47-year-old teacher with ALS and right foot drop. Family members see brace status, stair incidents and a weekly summary. Physicians see live ankle movement, gait trends, clinic scores, forecasts and Gemini reports. A simulator and seeded history let the dashboard run without brace hardware.\
-> Check it out on [devpost](https://devpost.com/software/elevait?_gl=1*kkec5y*_gcl_au*MjEwOTg1NDYzOS4xNzg5NTIwNzY4*_ga*MTQwMjYxMzIxMi4xNzg5NTIwNzY5*_ga_0YHJK3Y10M*czE3OTQxNzQ0NDEkbzM0JGcxJHQxNzk0MTc0ODUwJGo1NCRsMCRoMA..) or on [youtube](youtube.com/watch?v=eiBGPcBXuTM&source_ve_path=OTY3MTQ&embeds_referring_euri=https%3A%2F%2Fdevpost.com%2F)
+> Check it out on [devpost](https://devpost.com/software/elevait?_gl=1*kkec5y*_gcl_au*MjEwOTg1NDYzOS4xNzg5NTIwNzY4*_ga*MTQwMjYxMzIxMi4xNzg5NTIwNzY5*_ga_0YHJK3Y10M*czE3OTQxNzQ0NDEkbzM0JGcxJHQxNzk0MTc0ODUwJGo1NCRsMCRoMA..) or our youtube [demo](youtube.com/watch?v=eiBGPcBXuTM&source_ve_path=OTY3MTQ&embeds_referring_euri=https%3A%2F%2Fdevpost.com%2F)
 
 ## Features
 
